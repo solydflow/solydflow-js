@@ -1,0 +1,14 @@
+{
+  "name": "solydflow-js",
+  "version": "0.1.0",
+  "description": "SolydFlow Web SDK for React, Vue, and Vanilla JS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "keywords": ["solydflow", "payments", "africa", "subscriptions"],
+  "author": "SolydFlow",
+  "license": "MIT"
+}
