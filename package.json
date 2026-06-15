@@ -1,6 +1,6 @@
 {
   "name": "@solydflow/solydflow-js",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Official SolydFlow JavaScript SDK",
   "main": "dist/index.js",
   "module": "./dist/index.mjs",
@@ -8,7 +8,12 @@
   "scripts": {
     "build": "tsc"
   },
-  "keywords": ["solydflow", "payments", "africa", "subscriptions"],
+  "keywords": [
+    "solydflow",
+    "payments",
+    "africa",
+    "subscriptions"
+  ],
   "author": "SolydFlow",
   "license": "MIT",
   "files": [
