@@ -1,3 +1,17 @@
+export type TransactionStatus = 
+  | 'INITIATED' 
+  | 'PSP_PENDING' 
+  | 'SETTLED_CONSENSUS' 
+  | 'DISPUTED_MISMATCH' 
+  | 'PSP_FAILED' 
+  | 'FAILED_PERMANENT';
+
+export interface VerifyResult {
+  success: boolean;
+  status: TransactionStatus;
+  message?: string;
+}
+
 export interface SolydPackage {
   id: number;
   identifier: string;
@@ -115,6 +129,52 @@ class SolydFlowClient {
       window.location.href = data.authorization_url;
     } else {
       throw new Error(data.error || "Failed to get checkout URL");
+    }
+  }
+
+  /**
+   * Verify a transaction after returning from a hosted checkout redirect.
+   * Call this on your success page using the ?reference= URL parameter.
+   */
+  public async verifyTransaction(reference: string): Promise<VerifyResult> {
+    this.requireConfig();
+
+    try {
+      const res = await fetch(`${this.baseUrl}/pay/verify`, {
+        method: "POST",
+        headers: { "X-API-Key": this.apiKey!, "Content-Type": "application/json" },
+        body: JSON.stringify({ reference })
+      });
+
+      const data = await res.json();
+      const status = data.status as TransactionStatus;
+
+      // 🟢 Absolute Truth
+      if (status === 'SETTLED_CONSENSUS') {
+        // Refresh customer info to cache new entitlements
+        await this.getCustomerInfo();
+        return { success: true, status };
+      } 
+      // 🟡 Manual Review Needed
+      else if (status === 'DISPUTED_MISMATCH') {
+        return { 
+          success: false, 
+          status, 
+          message: "Payment is under review. Access will be granted shortly." 
+        };
+      } 
+      // 🔴 Hard Fail
+      else if (status === 'PSP_FAILED' || status === 'FAILED_PERMANENT') {
+        return { success: false, status, message: "Payment failed or was declined." };
+      } 
+      // ⚪ Still Processing
+      else {
+        return { success: false, status, message: "Payment is still processing." };
+      }
+
+    } catch (e) {
+      console.error("Verification error:", e);
+      return { success: false, status: 'INITIATED', message: "Network error during verification." };
     }
   }
 

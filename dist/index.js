@@ -92,6 +92,48 @@ class SolydFlowClient {
         }
     }
     /**
+     * Verify a transaction after returning from a hosted checkout redirect.
+     * Call this on your success page using the ?reference= URL parameter.
+     */
+    async verifyTransaction(reference) {
+        this.requireConfig();
+        try {
+            const res = await fetch(`${this.baseUrl}/pay/verify`, {
+                method: "POST",
+                headers: { "X-API-Key": this.apiKey, "Content-Type": "application/json" },
+                body: JSON.stringify({ reference })
+            });
+            const data = await res.json();
+            const status = data.status;
+            // 🟢 Absolute Truth
+            if (status === 'SETTLED_CONSENSUS') {
+                // Refresh customer info to cache new entitlements
+                await this.getCustomerInfo();
+                return { success: true, status };
+            }
+            // 🟡 Manual Review Needed
+            else if (status === 'DISPUTED_MISMATCH') {
+                return {
+                    success: false,
+                    status,
+                    message: "Payment is under review. Access will be granted shortly."
+                };
+            }
+            // 🔴 Hard Fail
+            else if (status === 'PSP_FAILED' || status === 'FAILED_PERMANENT') {
+                return { success: false, status, message: "Payment failed or was declined." };
+            }
+            // ⚪ Still Processing
+            else {
+                return { success: false, status, message: "Payment is still processing." };
+            }
+        }
+        catch (e) {
+            console.error("Verification error:", e);
+            return { success: false, status: 'INITIATED', message: "Network error during verification." };
+        }
+    }
+    /**
      * Generic Event Tracker
      */
     async trackEvent(eventType, metadata = {}) {

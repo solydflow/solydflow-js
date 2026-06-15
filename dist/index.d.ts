@@ -1,3 +1,9 @@
+export type TransactionStatus = 'INITIATED' | 'PSP_PENDING' | 'SETTLED_CONSENSUS' | 'DISPUTED_MISMATCH' | 'PSP_FAILED' | 'FAILED_PERMANENT';
+export interface VerifyResult {
+    success: boolean;
+    status: TransactionStatus;
+    message?: string;
+}
 export interface SolydPackage {
     id: number;
     identifier: string;
@@ -40,6 +46,11 @@ declare class SolydFlowClient {
      * Initialize checkout and redirect the browser
      */
     purchasePackage(packageIdentifier: string, userPhone?: string, customAmountKobo?: number): Promise<void>;
+    /**
+     * Verify a transaction after returning from a hosted checkout redirect.
+     * Call this on your success page using the ?reference= URL parameter.
+     */
+    verifyTransaction(reference: string): Promise<VerifyResult>;
     /**
      * Generic Event Tracker
      */
