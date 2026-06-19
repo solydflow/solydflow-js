@@ -46,6 +46,7 @@ declare class SolydFlowClient {
      * Initialize checkout and redirect the browser
      */
     purchasePackage(packageIdentifier: string, userPhone?: string, customAmountKobo?: number): Promise<void>;
+    private pollVerification;
     /**
      * Verify a transaction after returning from a hosted checkout redirect.
      * Call this on your success page using the ?reference= URL parameter.
@@ -55,6 +56,15 @@ declare class SolydFlowClient {
      * Generic Event Tracker
      */
     trackEvent(eventType: string, metadata?: Record<string, any>): Promise<void>;
+    /**
+     * Fetch the visual Paywall Config and Tier Metadata from the dashboard
+     */
+    getPaywallConfig(): Promise<any>;
+    /**
+     * Mounts the No-Code Paywall directly into the Developer's webpage
+     * @param containerId The ID of the div where the paywall should be injected
+     */
+    renderPaywall(containerId: string): Promise<void>;
     private requireConfig;
 }
 export declare const SolydFlow: SolydFlowClient;
