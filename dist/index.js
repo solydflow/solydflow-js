@@ -59,23 +59,78 @@ class SolydFlowClient {
         return await res.json();
     }
     /**
+     * Gather Real-Time Web Telemetry for AI Training
+     */
+    async collectTelemetry() {
+        let latency_ms = 0;
+        let network_type = "wifi"; // Default fallback
+        let battery_level = 100;
+        let device_os = "web";
+        let device_model = "browser";
+        try {
+            // 1. LATENCY PING: Measure actual round-trip time to our server
+            const start = performance.now();
+            // Using a lightweight endpoint or root to measure speed
+            await fetch("https://api.solydflow.com/api/admin/health", { method: "HEAD", mode: "no-cors" }).catch(() => { });
+            latency_ms = Math.round(performance.now() - start);
+        }
+        catch (e) {
+            latency_ms = -1; // Indication of network failure
+        }
+        // 2. NETWORK TYPE: Use the HTML5 Network Information API
+        // Returns "4g", "3g", "2g", or "slow-2g"
+        const nav = navigator; // Cast to any to bypass TS strict checking for experimental APIs
+        if (nav.connection && nav.connection.effectiveType) {
+            network_type = nav.connection.effectiveType;
+        }
+        // 3. BATTERY LEVEL: Use the HTML5 Battery Status API
+        try {
+            if (nav.getBattery) {
+                const battery = await nav.getBattery();
+                battery_level = Math.round(battery.level * 100);
+            }
+        }
+        catch (e) { }
+        // 4. DEVICE OS & MODEL: Parse User Agent
+        const ua = navigator.userAgent.toLowerCase();
+        if (ua.includes("android"))
+            device_os = "android";
+        else if (ua.includes("iphone") || ua.includes("ipad"))
+            device_os = "ios";
+        else if (ua.includes("mac"))
+            device_os = "macos";
+        else if (ua.includes("windows"))
+            device_os = "windows";
+        if (ua.includes("edg/"))
+            device_model = "Edge";
+        else if (ua.includes("chrome/"))
+            device_model = "Chrome";
+        else if (ua.includes("safari/") && !ua.includes("chrome/"))
+            device_model = "Safari";
+        else if (ua.includes("firefox/"))
+            device_model = "Firefox";
+        return {
+            network_type,
+            latency_ms,
+            device_os,
+            device_model,
+            battery_level
+        };
+    }
+    /**
      * Initialize checkout and redirect the browser
      */
     async purchasePackage(packageIdentifier, userPhone, customAmountKobo) {
         this.requireConfig();
+        // FETCH REAL TELEMETRY
+        const telemetryData = await this.collectTelemetry();
         const payload = {
             user_id: this.userId,
             package_identifier: packageIdentifier,
             email: `${this.userId}@solydflow.app`,
             phone: userPhone || "",
             custom_amount_kobo: customAmountKobo || 0,
-            telemetry: {
-                network_type: "wifi", // Default for web
-                device_os: "web",
-                latency_ms: 0,
-                device_model: navigator.userAgent.substring(0, 50),
-                battery_level: 100
-            }
+            telemetry: telemetryData
         };
         const res = await fetch(`${this.baseUrl}/pay/initialize`, {
             method: "POST",

@@ -43,6 +43,10 @@ declare class SolydFlowClient {
      */
     getCustomerInfo(): Promise<CustomerInfo>;
     /**
+     * Gather Real-Time Web Telemetry for AI Training
+     */
+    private collectTelemetry;
+    /**
      * Initialize checkout and redirect the browser
      */
     purchasePackage(packageIdentifier: string, userPhone?: string, customAmountKobo?: number): Promise<void>;

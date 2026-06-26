@@ -2,51 +2,75 @@
 
 Official JavaScript SDK for SolydFlow.
 
-Build subscription and entitlement-based applications with dynamic pricing, Purchasing Power Parity (PPP), Smart Upgrade Credits, and hosted checkout flows.
+SolydFlow is a hybrid revenue infrastructure that helps businesses manage subscriptions, purchases, entitlements, and customer access across local payment gateways, app stores, and global payment providers.
 
-The SDK enables your application to:
+The JavaScript SDK enables web applications to use the same pricing logic, entitlement management, smart routing, and subscription lifecycle capabilities available across the SolydFlow platform.
 
-* Fetch dynamic pricing
-* Apply Purchasing Power Parity (PPP)
-* Support Smart Upgrade Credits
-* Manage customer entitlements
-* Track subscription status
-* Launch secure hosted checkout sessions
-
-For complete integration guides, API references, architecture details, webhook events, and advanced configuration, visit:
+For complete integration guides, API references, webhook events, and advanced configuration, visit:
 
 **https://docs.solydflow.com/docs/intro**
 
 ---
 
+## What is SolydFlow?
+
+SolydFlow unifies app stores (Apple App Store and Google Play), local African payment gateways (Paystack and Flutterwave), and Stripe for global coverage and portability into a single platform.
+
+Beyond payment aggregation, SolydFlow includes:
+
+- Smart Payment Routing
+- Purchasing Power Parity (PPP)
+- Smart Upgrade Credits
+- Entitlement Management
+- Subscription Lifecycle Tracking
+- Hosted Checkout Flows
+- No-Code Paywalls
+
+This allows businesses to manage revenue, subscriptions, and customer access from a single source of truth.
+
+---
+
+## Key Features
+
+- 🌍 **Unified Revenue Infrastructure**
+- 🧠 **Smart Payment Routing**
+- 💳 **Dynamic Pricing & Purchasing Power Parity (PPP)**
+- 🎯 **Drop-In No-Code Paywalls**
+- 🔄 **Smart Upgrade Credits**
+- 🔐 **Entitlement Management**
+- 📡 **Subscription Lifecycle Events**
+- 🔗 **Hosted Checkout Flows**
+
+---
+
 ## Installation
 
-Install the SDK from npm:
+Install the SDK:
 
 ```bash
-npm install @solydflow/solydflow-js
+npm install solydflow-js
 ```
 
 or
 
 ```bash
-yarn add @solydflow/solydflow-js
+yarn add solydflow-js
 ```
 
 or
 
 ```bash
-pnpm add @solydflow/solydflow-js
+pnpm add solydflow-js
 ```
 
 ---
 
 ## Quick Start
 
-Initialize the SDK as early as possible after the user has been identified.
+Initialize the SDK as early as possible after the customer has been identified.
 
 ```javascript
-import { SolydFlow } from "@solydflow/solydflow-js";
+import { SolydFlow } from "solydflow-js";
 
 await SolydFlow.configure(
   "sf_pk_live_YOUR_PUBLIC_KEY",
@@ -56,10 +80,106 @@ await SolydFlow.configure(
 
 ### Parameters
 
-| Parameter    | Description                                   |
-| ------------ | --------------------------------------------- |
-| `publicKey`  | Your SolydFlow public API key                 |
+| Parameter | Description |
+|------------|------------|
+| `publicKey` | Your SolydFlow Public API Key |
 | `customerId` | Your application's unique customer identifier |
+
+---
+
+## Choose Your Integration Strategy
+
+The JavaScript SDK supports two integration approaches.
+
+| Option | Best For |
+|----------|----------|
+| Drop-In Paywall | Fastest implementation with dashboard-managed UI |
+| Custom UI | Complete control over the customer experience |
+
+---
+
+## Option A: Drop-In Paywall (Recommended)
+
+Instead of spending days building your own pricing interface, SolydFlow provides a fully responsive, high-converting Drop-In Paywall.
+
+The paywall automatically stays synchronized with the products, pricing, design, colors, and messaging configured in your SolydFlow Console.
+
+### Automatically Handles
+
+- Purchasing Power Parity (PPP)
+- Geo-based pricing
+- Smart Upgrade Credits
+- Checkout routing
+- Product rendering
+- Hosted checkout initiation
+
+### Step 1: Add a Container
+
+```html
+<div id="solydflow-paywall-container"></div>
+```
+
+### Step 2: Render the Paywall
+
+```javascript
+import { SolydFlow } from "solydflow-js";
+
+async function showPricing() {
+  await SolydFlow.configure(
+    "sf_pk_live_YOUR_PUBLIC_KEY",
+    "user_12345"
+  );
+
+  await SolydFlow.renderPaywall(
+    "solydflow-paywall-container"
+  );
+}
+```
+
+That's all that's required.
+
+The SDK automatically loads and renders the paywall you designed in the SolydFlow Console.
+
+### When Should You Use This?
+
+Choose the Drop-In Paywall if:
+
+- You want the fastest implementation.
+- Product teams manage pricing and promotions.
+- You want paywall updates without website deployments.
+- You want built-in localization and optimization.
+
+---
+
+## Option B: Custom UI (Advanced)
+
+If you prefer to build your own pricing experience, you can fetch package information directly and render your own components.
+
+SolydFlow will still calculate:
+
+- Purchasing Power Parity pricing
+- Smart Upgrade Credits
+- Regional pricing adjustments
+
+```javascript
+async function fetchRawPackages() {
+  const offerings = await SolydFlow.getOfferings();
+
+  offerings.forEach(pkg => {
+    if (pkg.is_upgrade) {
+      console.log(
+        `Upgrade for ${pkg.currency} ${pkg.calculated_amount_kobo / 100}`
+      );
+    } else {
+      console.log(
+        `Standard Price: ${pkg.currency} ${pkg.amount_kobo / 100}`
+      );
+    }
+  });
+}
+```
+
+You remain responsible for rendering the UI, while SolydFlow manages pricing logic, checkout routing, and entitlement calculations.
 
 ---
 
@@ -77,34 +197,30 @@ if (hasAccess) {
 }
 ```
 
+Use entitlements to gate premium features, subscriptions, and customer access.
+
 ---
 
-## Fetch Pricing & Packages
+## Smart Payment Routing
 
-Retrieve offerings configured in your SolydFlow dashboard.
+SolydFlow can automatically route payments to the most appropriate payment rail based on currency, geography, and routing rules configured in the SolydFlow Console.
 
-SolydFlow automatically applies:
+### Example Routing Rules
 
-* Purchasing Power Parity (PPP)
-* Geo-based pricing
-* Smart Upgrade Credits
-* Customer-specific pricing rules
+| Currency | Payment Rail |
+|-----------|--------------|
+| NGN | Monnify |
+| KES | M-Pesa |
+| USD | Stripe |
+| Other | Paystack / Flutterwave |
 
-```javascript
-const offerings = await SolydFlow.getOfferings();
-
-offerings.forEach((pkg) => {
-  console.log(pkg.name);
-  console.log(pkg.currency);
-  console.log(pkg.display_price);
-});
-```
+Routing rules can be updated without redeploying your application.
 
 ---
 
 ## Start Checkout
 
-Launch a hosted checkout session for a package.
+Launch a checkout session for a package.
 
 ```javascript
 await SolydFlow.purchasePackage(
@@ -117,12 +233,31 @@ Example:
 
 ```javascript
 await SolydFlow.purchasePackage(
-  "premium_monthly",
+  "gold_monthly",
   "2348012345678"
 );
 ```
 
-The SDK automatically redirects the customer to a secure hosted payment page.
+### Optional Phone Number
+
+A phone number is recommended for:
+
+- Local payment rails
+- Mobile money flows
+- Customer recovery workflows
+- Subscription re-engagement campaigns
+
+### Checkout Experience
+
+The SDK automatically selects the appropriate checkout experience based on your routing configuration.
+
+Examples include:
+
+- Hosted checkout pages
+- Virtual account payments
+- Mobile money payment flows
+
+No additional application logic is required.
 
 ---
 
@@ -170,34 +305,116 @@ Because checkout occurs outside your application, purchase completion is communi
 
 To receive subscription updates:
 
-1. Open the SolydFlow Console
-2. Navigate to your project settings
-3. Configure a webhook endpoint
-4. Deploy your backend listener
+1. Open the SolydFlow Console.
+2. Navigate to your project settings.
+3. Configure a webhook endpoint.
+4. Deploy your backend listener.
 
-SolydFlow sends verified subscription events to your backend whenever a customer:
+### Subscription Events
 
-* Starts a subscription
-* Renews a subscription
-* Upgrades a subscription
-* Cancels a subscription
-* Restores access
+SolydFlow can notify your backend when a customer:
+
+- Starts a subscription
+- Renews a subscription
+- Upgrades a subscription
+- Cancels a subscription
+- Restores access
+
+### Backend Responsibilities
 
 Your backend should:
 
-1. Verify the webhook signature
-2. Update customer records
-3. Sync entitlements
-4. Unlock application features
+1. Verify the webhook signature.
+2. Update customer records.
+3. Synchronize entitlements.
+4. Unlock application features.
+
+Without a backend webhook, your application will not be notified when a payment completes.
 
 ---
+
+## Backend Example (Express.js)
+
+The following example shows a simple webhook endpoint that receives subscription events from SolydFlow.
+
+### Example Event Payload
+
+```json
+{
+  "type": "subscription_renewed",
+  "customer_id": "user_12345",
+  "entitlement": "gold_access",
+  "package_id": "gold_monthly",
+  "expires_at": "2026-12-31T00:00:00Z"
+}
+
+```javascript
+import express from "express";
+
+const app = express();
+
+app.use(express.json());
+
+app.post("/webhooks/solydflow", async (req, res) => {
+  try {
+    const event = req.body;
+
+    switch (event.type) {
+      case "subscription_started":
+        console.log(
+          `Subscription started for ${event.customer_id}`
+        );
+        break;
+
+      case "subscription_renewed":
+        console.log(
+          `Subscription renewed for ${event.customer_id}`
+        );
+        break;
+
+      case "subscription_upgraded":
+        console.log(
+          `Subscription upgraded for ${event.customer_id}`
+        );
+        break;
+
+      case "subscription_cancelled":
+        console.log(
+          `Subscription cancelled for ${event.customer_id}`
+        );
+        break;
+
+      case "entitlement_restored":
+        console.log(
+          `Entitlement restored for ${event.customer_id}`
+        );
+        break;
+
+      default:
+        console.log("Unhandled event:", event.type);
+    }
+
+    res.status(200).json({
+      received: true,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Webhook processing failed",
+    });
+  }
+});
+
+app.listen(3000);
+```
 
 ## Recommended Integration Pattern
 
 ```text
 Frontend
     ↓
-Fetch Offerings
+Display Paywall
     ↓
 Customer Selects Plan
     ↓
@@ -205,18 +422,60 @@ Hosted Checkout
     ↓
 Payment Completed
     ↓
-SolydFlow Webhook
+SolydFlow Verification
     ↓
-Backend Updates User
+Webhook Event
+    ↓
+Backend Updates Customer
     ↓
 Customer Access Granted
 ```
 
 ---
 
+## Platform Status
+
+### Live
+
+- Paystack
+- Flutterwave
+- No-Code Paywalls
+- Entitlements
+- Subscription Events
+
+### Testing
+
+- Stripe
+
+### Planned
+
+- Monnify
+- M-Pesa / Daraja
+- Additional regional payment rails
+
+---
+
+## Security
+
+### Non-Custodial
+
+SolydFlow never holds your funds.
+
+Payments move directly between your customers and your connected payment providers.
+
+### Verification
+
+All transactions are verified before subscription events and entitlements are issued.
+
+### Signed Webhooks
+
+Webhook events are cryptographically signed and should always be verified by your backend.
+
+---
+
 ## Documentation
 
-For production deployments, webhook setup, entitlement architecture, pricing configuration, SDK methods, and API references:
+For production deployments, entitlement architecture, webhook setup, SDK methods, pricing configuration, routing rules, and API references:
 
 👉 https://docs.solydflow.com/docs/intro
 
@@ -224,6 +483,7 @@ For production deployments, webhook setup, entitlement architecture, pricing con
 
 ## Support
 
-* Documentation: https://docs.solydflow.com/docs/intro
-* Dashboard: https://console.solydflow.com
-* Website: https://solydflow.com
+- Documentation: https://docs.solydflow.com/docs/intro
+- Console: https://console.solydflow.com
+- Website: https://solydflow.com
+- Support: support@solydflow.com
