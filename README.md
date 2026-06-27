@@ -347,6 +347,7 @@ The following example shows a simple webhook endpoint that receives subscription
   "package_id": "gold_monthly",
   "expires_at": "2026-12-31T00:00:00Z"
 }
+```
 
 ```javascript
 import express from "express";
