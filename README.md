@@ -454,23 +454,23 @@ app.post("/webhooks/solydflow", async (req, res) => {
     }
 
     // --- WEBHOOK IS SECURE ---
-    const event = req.body;
+    const payload = req.body;
 
     // 4. Prevent Sandbox data from corrupting your Production database
-    if (event.is_test && process.env.NODE_ENV === "production") {
+    if (payload.is_test && process.env.NODE_ENV === "production") {
         console.log("Ignored SolydFlow Sandbox event.");
         return res.status(200).send("Ignored");
     }
 
     // 5. Handle Business Logic
-    switch (event.event) {
+    switch (payload.event) {
       case "subscription_renewed":
-        console.log(`Access granted for user ${event.user_id}. Unlocking: ${event.entitlement} until ${event.expires_at}`);
+        console.log(`Access granted for user ${payload.user_id}. Unlocking: ${payload.entitlement} until ${payload.expires_at}`);
         // TODO: Update your database to grant the user access
         break;
 
       case "subscription_revoked":
-        console.log(`Access revoked for user ${event.user_id}. Reason: ${event.reason}`);
+        console.log(`Access revoked for user ${payload.user_id}. Reason: ${payload.reason}`);
         // TODO: Remove user access immediately
         break;
 
@@ -479,7 +479,7 @@ app.post("/webhooks/solydflow", async (req, res) => {
         break;
 
       default:
-        console.log("Unhandled event:", event.event);
+        console.log("Unhandled event:", payload.event);
     }
 
     // Always return a 200 OK so SolydFlow knows the event was received successfully
