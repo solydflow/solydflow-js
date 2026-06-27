@@ -333,9 +333,13 @@ Without a backend webhook, your application will not know when a user completes 
 
 ---
 
-## Example Event Payload
+## The 3 Webhook Events
 
-SolydFlow sends a standardized, flat JSON object for all webhook events regardless of the payment provider used.
+To keep your integration incredibly simple, SolydFlow consolidates all billing complexity into just **three specific events**. You do not need to track cancellations, upgrades, or downgrades. You only need to know when to grant access, when to kill access, and when you are testing.
+
+### 1. `subscription_renewed`
+**When it fires:** A user successfully pays (first-time, renewal, or upgrade), or a dropped payment is rescued by the SolydFlow Sweeper.
+**What to do:** Grant the user access to the `entitlement` until the `expires_at` date.
 
 ```json
 {
@@ -347,7 +351,40 @@ SolydFlow sends a standardized, flat JSON object for all webhook events regardle
   "package_id": "gold_monthly",
   "entitlement": "gold_access",
   "provider": "paystack",
-  "expires_at": "2026-12-31T00:00:00Z"
+  "expires_at": "2026-07-27T18:33:00Z"
+}
+```
+
+### 2. `subscription_revoked`
+**When it fires:** A user's access is forcefully killed before their natural expiration date (e.g., a card chargeback, an Apple refund, or a manual Admin rejection in the dashboard).
+**What to do:** Immediately revoke the user's access to the `entitlement`.
+
+```json
+{
+  "event": "subscription_revoked",
+  "event_id": "evt_991f8400-e29b-41d4-a716-446655440001",
+  "environment": "live",
+  "is_test": false,
+  "user_id": "user_12345",
+  "package_id": "gold_monthly",
+  "entitlement": "gold_access",
+  "reason": "chargeback",
+  "revoked_at": "2026-06-27T18:33:00Z"
+}
+```
+
+### 3. `test_event`
+**When it fires:** You click "Send Test Webhook" in the SolydFlow Console API Vault.
+**What to do:** Use this to verify your HMAC SHA-256 cryptographic signature logic is working correctly before going live.
+
+```json
+{
+  "event": "test_event",
+  "user_id": "sf_test_user_999",
+  "package_id": "test_monthly_gold",
+  "entitlement": "gold_access",
+  "provider": "solydflow_test",
+  "expires_at": "2026-07-27T18:33:00Z"
 }
 ```
 
@@ -357,7 +394,7 @@ SolydFlow sends a standardized, flat JSON object for all webhook events regardle
 
 To secure your endpoint, you must verify the `X-SolydFlow-Signature` header. This header contains a UNIX timestamp (`t=...`) and the HMAC signature (`v1=...`).
 
-The following example demonstrates how to capture the raw body, securely verify the signature to prevent replay attacks, and update your user records.
+The following example demonstrates how to capture the raw body, securely verify the signature to prevent replay attacks, and handle the exactly 3 events SolydFlow sends.
 
 ```javascript
 import express from "express";
@@ -428,13 +465,17 @@ app.post("/webhooks/solydflow", async (req, res) => {
     // 5. Handle Business Logic
     switch (event.event) {
       case "subscription_renewed":
-        console.log(`Access granted for user ${event.user_id}. Unlocking: ${event.entitlement}`);
-        // TODO: Update your database to grant the user access until event.expires_at
+        console.log(`Access granted for user ${event.user_id}. Unlocking: ${event.entitlement} until ${event.expires_at}`);
+        // TODO: Update your database to grant the user access
         break;
 
       case "subscription_revoked":
         console.log(`Access revoked for user ${event.user_id}. Reason: ${event.reason}`);
         // TODO: Remove user access immediately
+        break;
+
+      case "test_event":
+        console.log(`Test webhook received successfully! Signature logic is working.`);
         break;
 
       default:
