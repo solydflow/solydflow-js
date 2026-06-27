@@ -333,13 +333,39 @@ Without a backend webhook, your application will not know when a user completes 
 
 ---
 
-## The 3 Webhook Events
+# Securing & Handling Webhooks
 
-To keep your integration incredibly simple, SolydFlow consolidates all billing complexity into just **three specific events**. You do not need to track cancellations, upgrades, or downgrades. You only need to know when to grant access, when to kill access, and when you are testing.
+SolydFlow sends webhooks to your server to notify you of successful payments, recovered transactions, and subscription changes. 
 
-### 1. `subscription_renewed`
-**When it fires:** A user successfully pays (first-time, renewal, or upgrade), or a dropped payment is rescued by the SolydFlow Sweeper.
-**What to do:** Grant the user access to the `entitlement` until the `expires_at` date.
+Because webhooks are public endpoints on your server, you must verify that incoming requests are genuinely from SolydFlow and have not been intercepted or delayed by malicious actors (Replay Attacks).
+
+---
+
+## The 4 Webhook Events
+
+To keep your integration incredibly simple while still supporting powerful marketing analytics, SolydFlow consolidates all billing complexity into just **four specific events**. 
+
+### 1. `subscription_started`
+**When it fires:** A user successfully pays for an entitlement for the very first time, or they purchase it again after their previous subscription completely expired.
+**What to do:** Grant the user access to the `entitlement` until the `expires_at` date. *Tip: This is the perfect event to trigger a "Welcome to Premium" onboarding email!*
+
+```json
+{
+  "event": "subscription_started",
+  "event_id": "evt_110e8400-e29b-41d4-a716-446655440001",
+  "environment": "live",
+  "is_test": false,
+  "user_id": "user_12345",
+  "package_id": "gold_monthly",
+  "entitlement": "gold_access",
+  "provider": "paystack",
+  "expires_at": "2026-07-27T18:33:00Z"
+}
+```
+
+### 2. `subscription_renewed`
+**When it fires:** A user's *active* subscription is renewed, upgraded, or a dropped payment is rescued by the SolydFlow Sweeper. Time is added to their current access.
+**What to do:** Silently extend the user's access in your database to the new `expires_at` date. 
 
 ```json
 {
@@ -351,13 +377,13 @@ To keep your integration incredibly simple, SolydFlow consolidates all billing c
   "package_id": "gold_monthly",
   "entitlement": "gold_access",
   "provider": "paystack",
-  "expires_at": "2026-07-27T18:33:00Z"
+  "expires_at": "2026-08-27T18:33:00Z"
 }
 ```
 
-### 2. `subscription_revoked`
+### 3. `subscription_revoked`
 **When it fires:** A user's access is forcefully killed before their natural expiration date (e.g., a card chargeback, an Apple refund, or a manual Admin rejection in the dashboard).
-**What to do:** Immediately revoke the user's access to the `entitlement`.
+**What to do:** Immediately revoke the user's access to the `entitlement` and pause their services.
 
 ```json
 {
@@ -373,7 +399,7 @@ To keep your integration incredibly simple, SolydFlow consolidates all billing c
 }
 ```
 
-### 3. `test_event`
+### 4. `test_event`
 **When it fires:** You click "Send Test Webhook" in the SolydFlow Console API Vault.
 **What to do:** Use this to verify your HMAC SHA-256 cryptographic signature logic is working correctly before going live.
 
@@ -394,7 +420,7 @@ To keep your integration incredibly simple, SolydFlow consolidates all billing c
 
 To secure your endpoint, you must verify the `X-SolydFlow-Signature` header. This header contains a UNIX timestamp (`t=...`) and the HMAC signature (`v1=...`).
 
-The following example demonstrates how to capture the raw body, securely verify the signature to prevent replay attacks, and handle the exactly 3 events SolydFlow sends.
+The following example demonstrates how to capture the raw body, securely verify the signature to prevent replay attacks, isolate Sandbox data, and handle the 4 events.
 
 ```javascript
 import express from "express";
@@ -464,9 +490,14 @@ app.post("/webhooks/solydflow", async (req, res) => {
 
     // 5. Handle Business Logic
     switch (payload.event) {
+      case "subscription_started":
+        console.log(`NEW CUSTOMER! Access granted for user ${payload.user_id}. Unlocking: ${payload.entitlement} until ${payload.expires_at}`);
+        // TODO: Grant access and trigger Welcome Email
+        break;
+
       case "subscription_renewed":
-        console.log(`Access granted for user ${payload.user_id}. Unlocking: ${payload.entitlement} until ${payload.expires_at}`);
-        // TODO: Update your database to grant the user access
+        console.log(`Access extended for user ${payload.user_id}. Unlocking: ${payload.entitlement} until ${payload.expires_at}`);
+        // TODO: Update your database to extend user access
         break;
 
       case "subscription_revoked":
