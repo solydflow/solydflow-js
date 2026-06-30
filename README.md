@@ -8,7 +8,7 @@ The JavaScript SDK enables web applications to use the same pricing logic, entit
 
 For complete integration guides, API references, webhook events, and advanced configuration, visit:
 
-**https://docs.solydflow.com/docs/intro**
+**https://docs.solydflow.com**
 
 ---
 
@@ -593,13 +593,13 @@ Webhook events are cryptographically signed and should always be verified by you
 
 For production deployments, entitlement architecture, webhook setup, SDK methods, pricing configuration, routing rules, and API references:
 
-👉 https://docs.solydflow.com/docs/intro
+👉 https://docs.solydflow.com
 
 ---
 
 ## Support
 
-- Documentation: https://docs.solydflow.com/docs/intro
+- Documentation: https://docs.solydflow.com
 - Console: https://console.solydflow.com
 - Website: https://solydflow.com
 - Support: support@solydflow.com
