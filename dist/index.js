@@ -5,14 +5,16 @@ class SolydFlowClient {
     constructor() {
         this.apiKey = null;
         this.userId = null;
+        this.userEmail = null;
         this.baseUrl = "https://api.solydflow.com/api/v1";
     }
     /**
      * Initialize the SDK
      */
-    async configure(apiKey, userId) {
+    async configure(apiKey, userId, userEmail) {
         this.apiKey = apiKey;
         this.userId = userId;
+        this.userEmail = userEmail || null;
         // Warm-up handshake
         try {
             await this.getCustomerInfo();
@@ -120,14 +122,14 @@ class SolydFlowClient {
     /**
      * Initialize checkout and redirect the browser
      */
-    async purchasePackage(packageIdentifier, userPhone, customAmountKobo) {
+    async purchasePackage(packageIdentifier, userPhone, customAmountKobo, userEmail) {
         this.requireConfig();
         // FETCH REAL TELEMETRY
         const telemetryData = await this.collectTelemetry();
         const payload = {
             user_id: this.userId,
             package_identifier: packageIdentifier,
-            email: `${this.userId}@solydflow.app`,
+            email: userEmail || this.userEmail || "",
             phone: userPhone || "",
             custom_amount_kobo: customAmountKobo || 0,
             telemetry: telemetryData

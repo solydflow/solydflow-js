@@ -74,7 +74,8 @@ import { SolydFlow } from "solydflow-js";
 
 await SolydFlow.configure(
   "sf_pk_live_YOUR_PUBLIC_KEY",
-  "user_12345"
+  "user_12345",
+  "user@mail.com"
 );
 ```
 
@@ -127,7 +128,8 @@ import { SolydFlow } from "solydflow-js";
 async function showPricing() {
   await SolydFlow.configure(
     "sf_pk_live_YOUR_PUBLIC_KEY",
-    "user_12345"
+    "user_12345",
+    "user@mail.com"
   );
 
   await SolydFlow.renderPaywall(

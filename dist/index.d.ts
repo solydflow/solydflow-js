@@ -25,11 +25,12 @@ export interface CustomerInfo {
 declare class SolydFlowClient {
     private apiKey;
     private userId;
+    private userEmail;
     private baseUrl;
     /**
      * Initialize the SDK
      */
-    configure(apiKey: string, userId: string): Promise<void>;
+    configure(apiKey: string, userId: string, userEmail?: string): Promise<void>;
     /**
      * Fetch localized packages based on IP and Proration math
      */
@@ -49,7 +50,7 @@ declare class SolydFlowClient {
     /**
      * Initialize checkout and redirect the browser
      */
-    purchasePackage(packageIdentifier: string, userPhone?: string, customAmountKobo?: number): Promise<void>;
+    purchasePackage(packageIdentifier: string, userPhone?: string, customAmountKobo?: number, userEmail?: string): Promise<void>;
     private pollVerification;
     /**
      * Verify a transaction after returning from a hosted checkout redirect.
