@@ -27,6 +27,7 @@ declare class SolydFlowClient {
     private userId;
     private userEmail;
     private baseUrl;
+    private pollingInterval;
     /**
      * Initialize the SDK
      */
