@@ -20,6 +20,7 @@ export interface SolydPackage {
 export interface CustomerInfo {
     user_id: string;
     active: Record<string, boolean>;
+    active_packages: any[];
     entitlements: Record<string, string>;
 }
 declare class SolydFlowClient {
