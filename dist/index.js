@@ -716,7 +716,7 @@ class SolydFlowClient {
             const tiersMeta = paywallRes.tiers || [];
             // 3. Logic: Extract Durations & Sort
             const durationOrder = { "week": 1, "month": 2, "quarter": 3, "year": 4, "lifetime": 5 };
-            const availableDurations = [...new Set(offerings.map(p => p.duration))].sort((a, b) => durationOrder[a] - durationOrder[b]);
+            const availableDurations = [...new Set(offerings.map((p) => p.duration))].sort((a, b) => durationOrder[a] - durationOrder[b]);
             let activeDuration = availableDurations.includes("month") ? "month" : availableDurations[0];
             // 4. Inject CSS
             const primaryColor = config.primary_color || "#EA580C";
@@ -748,9 +748,15 @@ class SolydFlowClient {
         .sf-badge { position: absolute; top: 0; right: 0; background: ${primaryColor}; color: #fff; font-size: 10px; font-weight: bold; padding: 6px 16px; border-bottom-left-radius: 16px; text-transform: uppercase; letter-spacing: 1px; }
         .sf-tier-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 16px; }
         .sf-price-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 24px; }
-        .sf-price { font-size: 2.5rem; font-weight: 900; }
+        .sf-price { font-size: 2.5rem; font-weight: 900; line-height: 1; }
         .sf-duration { font-size: 0.9rem; opacity: 0.6; }
         
+        /* Custom Variable Input CSS */
+        .sf-var-input { background: transparent; border: none; border-bottom: 2px dashed ${borderColor}; color: ${textColor}; font-size: 2.5rem; font-weight: 900; width: 140px; outline: none; margin-left: 8px; transition: border-color 0.2s; padding: 0; line-height: 1; }
+        .sf-var-input:focus { border-bottom-color: ${primaryColor}; }
+        .sf-var-input::-webkit-outer-spin-button, .sf-var-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .sf-var-input[type=number] { -moz-appearance: textfield; }
+
         .sf-features { list-style: none; padding: 0; margin: 0 0 32px 0; flex: 1; }
         .sf-feature-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 0.95rem; opacity: 0.9; }
         .sf-check { color: ${primaryColor}; font-weight: bold; }
@@ -761,7 +767,6 @@ class SolydFlowClient {
         .sf-btn:hover { opacity: 0.9; }
         .sf-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Email Input for Web Guests */
         .sf-email-input { width: 100%; padding: 12px 16px; margin-bottom: 16px; border-radius: 8px; border: 1px solid ${borderColor}; background: ${bgColor}; color: ${textColor}; font-size: 14px; outline: none; }
         .sf-email-input:focus { border-color: ${primaryColor}; }
         
@@ -770,28 +775,19 @@ class SolydFlowClient {
             document.head.appendChild(style);
             // 5. Render Function
             const renderUI = () => {
-                // Filter and Sort: Lowest tier level first, then by price
                 const visiblePackages = offerings
-                    .filter(p => p.duration === activeDuration)
-                    .sort((a, b) => {
-                    if (a.tier_level !== b.tier_level)
-                        return a.tier_level - b.tier_level;
-                    return a.amount_kobo - b.amount_kobo;
-                });
+                    .filter((p) => p.duration === activeDuration)
+                    .sort((a, b) => (a.tier_level || 1) - (b.tier_level || 1));
                 let html = `<div class="sf-wrapper">`;
-                // Hero Image
                 if (config.header_image_url) {
                     html += `<img src="${config.header_image_url}" class="sf-hero-img" alt="Header" />`;
                 }
-                // Header
                 html += `
           <div class="sf-header">
             <h1 class="sf-headline">${config.headline || "Upgrade to Pro"}</h1>
             <p class="sf-subhead">${config.subheading || "Choose the plan that fits you best."}</p>
           </div>
         `;
-                // Email Input (Crucial for Web so they get their receipt!)
-                // Only show if the user ID is a generated guest ID
                 const isGuest = this.userId?.startsWith("guest_");
                 if (isGuest) {
                     html += `
@@ -801,7 +797,6 @@ class SolydFlowClient {
             </div>
           `;
                 }
-                // Duration Toggle
                 if (availableDurations.length > 1) {
                     html += `<div class="sf-toggle-wrapper"><div class="sf-toggle">`;
                     availableDurations.forEach(dur => {
@@ -810,22 +805,19 @@ class SolydFlowClient {
                     });
                     html += `</div></div>`;
                 }
-                // Grid
                 html += `<div class="sf-grid">`;
                 if (visiblePackages.length === 0) {
-                    html += `<div style="text-align:center; padding: 40px; width: 100%; opacity: 0.5;">No plans available.</div>`;
+                    html += `<div style="text-align:center; padding: 40px; width: 100%; opacity: 0.5; grid-column: 1/-1;">No plans available.</div>`;
                 }
                 visiblePackages.forEach((pkg, index) => {
-                    // 1. DYNAMIC TIER LOGIC
-                    const isHighest = index === visiblePackages.length - 1 && visiblePackages.length > 1;
+                    const isHighestTier = index === visiblePackages.length - 1 && visiblePackages.length > 1;
                     const isMiddle = index === visiblePackages.length - 2 && visiblePackages.length > 2;
-                    const isHighlighted = isHighest || isMiddle; // Apply border/button highlights to both top tiers
+                    const isHighlighted = isHighestTier || isMiddle;
                     const meta = tiersMeta.find((t) => t.entitlement_id === pkg.entitlement_id);
                     const displayName = meta?.display_name || pkg.name;
                     const features = meta?.features || [];
-                    // 2. DYNAMIC BADGE HTML
                     let badgeHtml = '';
-                    if (isHighest) {
+                    if (isHighestTier) {
                         // Premium Badge (Inverted Colors for Exclusivity)
                         badgeHtml = `<div class="sf-badge" style="background: ${textColor}; color: ${bgColor};">Premium</div>`;
                     }
@@ -833,17 +825,29 @@ class SolydFlowClient {
                         // Best Value Badge (Primary Theme Color)
                         badgeHtml = `<div class="sf-badge">Best Value</div>`;
                     }
+                    // VARIABLE PRICING LOGIC
                     let priceHtml = '';
-                    if (pkg.is_upgrade) {
+                    if (pkg.is_variable_price) {
+                        priceHtml = `
+                <div style="display: flex; align-items: baseline;">
+                  <span class="sf-price">${pkg.currency}</span>
+                  <input type="number" id="sf-var-${pkg.identifier}" class="sf-var-input" value="${pkg.amount_kobo / 100}" min="${pkg.amount_kobo / 100}" step="any" />
+                </div>
+                <div style="font-size: 10px; color: ${primaryColor}; font-weight: bold; margin-top: 8px;">PAY WHAT YOU WANT (Min: ${pkg.currency} ${pkg.amount_kobo / 100})</div>
+              `;
+                    }
+                    else if (pkg.is_upgrade) {
                         priceHtml = `
                 <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</span>
-                <div style="color: ${primaryColor}; font-size: 36px; font-weight: 900; line-height: 1; margin-top: 4px;">${pkg.currency} ${(pkg.calculated_amount_kobo / 100).toLocaleString()}</div>
+                <div style="color: ${primaryColor};" class="sf-price">${pkg.currency} ${(pkg.calculated_amount_kobo / 100).toLocaleString()}</div>
                 <div style="color: ${primaryColor}; font-size: 10px; font-weight: 900; margin-top: 8px; padding: 4px 8px; background: ${primaryColor}22; border-radius: 6px; display: inline-block;">UPGRADE CREDIT APPLIED</div>
               `;
                     }
                     else {
-                        priceHtml = `<div style="font-size: 36px; font-weight: 900; line-height: 1;">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</div>`;
+                        priceHtml = `<div class="sf-price">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</div>`;
                     }
+                    // BUTTON TEXT LOGIC
+                    const buttonText = pkg.is_variable_price ? `Support & Pay` : `Get ${displayName}`;
                     html += `
             <div class="sf-card ${isHighlighted ? 'popular' : ''}">
               ${badgeHtml}
@@ -855,61 +859,78 @@ class SolydFlowClient {
                 <div style="font-size: 12px; opacity: 0.5; margin-top: 6px; font-weight: 600; text-transform: uppercase;">PER ${pkg.duration}</div>
               </div>
 
-              <ul style="list-style: none; padding: 0; margin: 0 0 32px 0; flex: 1;">
+              <ul class="sf-features">
                 ${features.map((f) => `
-                  <li style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 14px; opacity: 0.9;">
-                    <span style="color: ${primaryColor}; font-weight: bold;">✓</span> <span>${f}</span>
+                  <li class="sf-feature-item">
+                    <span class="sf-check">✓</span> <span>${f}</span>
                   </li>
                 `).join('')}
               </ul>
 
-              <button class="sf-buy-btn" data-pkg="${pkg.identifier}" style="width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; transition: opacity 0.2s; background: ${isHighlighted ? primaryColor : textColor}; color: ${isHighlighted ? '#fff' : bgColor};">
-                Get ${displayName}
+              <!-- Attached data-isvar and data-min -->
+              <button class="sf-btn ${isHighlighted ? 'sf-btn-primary' : 'sf-btn-secondary'} sf-buy-btn" data-pkg="${pkg.identifier}" data-isvar="${pkg.is_variable_price}" data-min="${pkg.amount_kobo}">
+                ${buttonText}
               </button>
             </div>
           `;
                 });
                 html += `</div>`;
-                if (config.footer_text) {
+                if (config.footer_text)
                     html += `<div class="sf-footer">${config.footer_text}</div>`;
-                }
                 html += `</div>`;
                 container.innerHTML = html;
                 // Attach Listeners
                 document.querySelectorAll('.sf-toggle-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         activeDuration = e.target.getAttribute('data-dur') || activeDuration;
-                        renderUI(); // Re-render on toggle
+                        renderUI();
                     });
                 });
                 document.querySelectorAll('.sf-buy-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
-                        const target = e.target;
+                        const target = e.currentTarget;
                         const pkgId = target.getAttribute('data-pkg');
+                        // VALIDATE CUSTOM AMOUNT IF VARIABLE
+                        const isVar = target.getAttribute('data-isvar') === 'true';
+                        let customKobo = 0;
+                        if (isVar) {
+                            const inputEl = document.getElementById(`sf-var-${pkgId}`);
+                            const minKobo = parseInt(target.getAttribute('data-min') || '0');
+                            const userVal = parseFloat(inputEl.value);
+                            customKobo = Math.round(userVal * 100);
+                            if (isNaN(userVal) || customKobo < minKobo) {
+                                // @ts-ignore (Assuming SolydDialog is available globally or imported)
+                                SolydDialog.showError("Invalid Amount", `Please enter an amount of at least ${minKobo / 100}.`, () => {
+                                    inputEl.focus();
+                                });
+                                return;
+                            }
+                        }
+                        // Email Validation
                         let userEmail = "";
                         if (isGuest) {
                             const emailInput = document.getElementById('sf-guest-email');
                             if (!emailInput.value || !emailInput.value.includes("@")) {
-                                // ALERT WITH SOLYD DIALOG
-                                SolydDialog.showError("Missing Information", "Please enter a valid email address so we can send your receipt and access link.", () => {
-                                    emailInput.focus();
-                                });
+                                // @ts-ignore
+                                SolydDialog.showError("Missing Information", "Please enter a valid email address.", () => emailInput.focus());
                                 return;
                             }
                             userEmail = emailInput.value;
                         }
+                        const originalText = target.innerHTML;
                         target.innerHTML = "Processing...";
                         target.disabled = true;
-                        // BLOCK SCREEN WITH SOLYD LOADING DIALOG
+                        target.style.opacity = "0.7";
+                        // @ts-ignore
                         SolydDialog.show("Initializing secure checkout environment...", null);
                         try {
-                            // Trigger actual purchase
-                            await this.purchasePackage(pkgId, undefined, 0, userEmail);
+                            // PASS CUSTOM KOBO TO API
+                            await this.purchasePackage(pkgId, undefined, customKobo, userEmail);
                         }
                         catch (err) {
-                            // ALERT WITH SOLYD DIALOG
+                            // @ts-ignore
                             SolydDialog.showError("Checkout Error", err.message || "Failed to initialize checkout. Please try again.", () => {
-                                target.innerHTML = "Try again...";
+                                target.innerHTML = originalText;
                                 target.disabled = false;
                                 target.style.opacity = "1";
                             });
@@ -917,13 +938,13 @@ class SolydFlowClient {
                     });
                 });
             };
-            // Initial Render
             renderUI();
-            // Track view
             this.trackEvent("hosted_paywall_viewed");
         }
-        catch (e) {
-            container.innerHTML = `<div style="text-align:center; color:red; padding:40px;">Failed to load paywall.</div>`;
+        catch (error) {
+            container.innerHTML = `<div style="color: #EA580C; text-align: center; font-family: sans-serif; padding: 20px; background: #111; border: 1px solid #333; border-radius: 12px; max-width: 400px; margin: 0 auto;">
+          <strong>Error loading paywall</strong><br/><span style="font-size: 12px; color: #888;">Check API configuration or network.</span>
+      </div>`;
         }
     }
     /**
