@@ -72,6 +72,12 @@ declare class SolydFlowClient {
      * @param containerId The ID of the div where the paywall should be injected
      */
     renderPaywall(containerId: string): Promise<void>;
+    renderWebPaywall(containerId: string): Promise<void>;
+    /**
+     * Mounts the No-Code Paywall directly into the Developer's webpage
+     * @param containerId The ID of the div where the paywall should be injected
+     */
+    renderWebPaywallNew(containerId: string): Promise<void>;
     private requireConfig;
 }
 export declare const SolydFlow: SolydFlowClient;

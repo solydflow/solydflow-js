@@ -49,6 +49,149 @@ class SolydDialog {
           Awaiting confirmation...
         </p>
 
+        <!-- Added cursor: pointer and hover transition -->
+        <button id="solydflow-cancel-btn" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: #666; cursor: pointer; padding: 8px; border-radius: 50%; transition: color 0.2s ease;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <style>
+        @keyframes solyd-spin { to { transform: rotate(360deg); } }
+        @keyframes solyd-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+      </style>
+    `;
+        document.body.appendChild(this.container);
+        // Trigger animations
+        requestAnimationFrame(() => {
+            if (this.container) {
+                this.container.style.opacity = '1';
+                this.container.firstElementChild.style.transform = 'translateY(0)';
+            }
+        });
+        // Handle Cancel
+        const cancelBtn = document.getElementById('solydflow-cancel-btn');
+        if (cancelBtn) {
+            cancelBtn.onclick = () => {
+                this.hide();
+                if (onCancel)
+                    onCancel();
+            };
+        }
+    }
+    static hide() {
+        if (this.container) {
+            this.container.style.opacity = '0';
+            const el = this.container;
+            setTimeout(() => {
+                if (el && el.parentNode)
+                    el.parentNode.removeChild(el);
+            }, 300); // Wait for fade out
+            this.container = null;
+        }
+    }
+    static showError(title, message, onClose) {
+        if (!this.container) {
+            // Failsafe in case it was already closed
+            this.container = document.createElement('div');
+            this.container.id = 'solydflow-action-dialog';
+            Object.assign(this.container.style, {
+                position: 'fixed', top: '0', left: '0', width: '100vw', height: '100vh',
+                backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(8px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: '999999', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                opacity: '1'
+            });
+            document.body.appendChild(this.container);
+        }
+        // Inject the Red Error UI
+        this.container.innerHTML = `
+      <div style="background: #111; border: 1px solid #333; border-radius: 24px; padding: 32px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; animation: solyd-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;">
+        
+        <!-- Red Error Circle -->
+        <div style="width: 64px; height: 64px; margin: 0 auto 24px auto; background: rgba(220, 38, 38, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #DC2626;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+
+        <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 20px; font-weight: 800;">${title}</h3>
+        <p style="margin: 0 0 32px 0; color: #aaa; font-size: 14px; line-height: 1.5;">${message}</p>
+        
+        <!-- Added cursor: pointer and hover transition -->
+        <button id="solydflow-close-error-btn" style="background: #fff; color: #000; border: none; padding: 14px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s ease; font-size: 14px;" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background='#fff'">
+          Close & Try Again
+        </button>
+      </div>
+
+      <style>
+        @keyframes solyd-shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+          40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+      </style>
+    `;
+        const closeBtn = document.getElementById('solydflow-close-error-btn');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                this.hide();
+                if (onClose)
+                    onClose();
+            };
+        }
+    }
+}
+SolydDialog.container = null;
+class SolydDialogOld {
+    static show(instruction, virtualAccount, onCancel) {
+        if (this.container)
+            this.hide(); // Prevent duplicates
+        this.container = document.createElement('div');
+        this.container.id = 'solydflow-action-dialog';
+        // Inject CSS styles directly so developers don't need a separate stylesheet
+        Object.assign(this.container.style, {
+            position: 'fixed',
+            top: '0', left: '0', width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: '999999',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+            opacity: '0',
+            transition: 'opacity 0.3s ease'
+        });
+        let vaHtml = '';
+        if (virtualAccount) {
+            vaHtml = `
+        <div style="margin-top: 20px; background: #000; border: 1px solid #333; border-radius: 12px; padding: 16px;">
+          <p style="margin: 0 0 4px 0; font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold;">${virtualAccount.bank_name || 'Bank Transfer'}</p>
+          <p style="margin: 0; font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 2px;">${virtualAccount.account_number}</p>
+          <p style="margin: 6px 0 0 0; font-size: 12px; color: #666;">${virtualAccount.account_name}</p>
+        </div>
+      `;
+        }
+        this.container.innerHTML = `
+      <div style="background: #111; border: 1px solid #222; border-radius: 24px; padding: 32px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; transform: translateY(20px); transition: transform 0.3s ease;">
+        
+        <!-- Animated Pulse Ring -->
+        <div style="position: relative; width: 64px; height: 64px; margin: 0 auto 24px auto;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 3px solid #EA580C; border-radius: 50%; border-top-color: transparent; animation: solyd-spin 1s linear infinite;"></div>
+          <div style="position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px; background: rgba(234, 88, 12, 0.1); border-radius: 50%;"></div>
+        </div>
+
+        <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 20px; font-weight: 800;">Action Required</h3>
+        <p style="margin: 0; color: #aaa; font-size: 14px; line-height: 1.5;">${instruction}</p>
+        
+        ${vaHtml}
+
+        <p style="margin: 24px 0 0 0; color: #EA580C; font-size: 12px; font-weight: 600; animation: solyd-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
+          Awaiting confirmation...
+        </p>
+
         <button id="solydflow-cancel-btn" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: #666; cursor: pointer; padding: 8px; border-radius: 50%;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
         </button>
@@ -102,7 +245,7 @@ class SolydDialog {
             });
             document.body.appendChild(this.container);
         }
-        // 🟢 Inject the Red Error UI
+        // Inject the Red Error UI
         this.container.innerHTML = `
       <div style="background: #111; border: 1px solid #333; border-radius: 24px; padding: 32px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; animation: solyd-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;">
         
@@ -141,7 +284,7 @@ class SolydDialog {
         }
     }
 }
-SolydDialog.container = null;
+SolydDialogOld.container = null;
 class SolydFlowClient {
     constructor() {
         this.apiKey = null;
@@ -268,7 +411,7 @@ class SolydFlowClient {
         this.requireConfig();
         // FETCH REAL TELEMETRY
         const telemetryData = await this.collectTelemetry();
-        // 🟢 1. IMMEDIATELY open a popup to bypass browser popup blockers.
+        // 1. IMMEDIATELY open a popup to bypass browser popup blockers.
         // We open it centered on the user's screen.
         const width = 500;
         const height = 700;
@@ -374,7 +517,7 @@ class SolydFlowClient {
             const result = await this.verifyTransaction(reference);
             if (result.status === 'SETTLED_CONSENSUS' || result.status === 'PSP_FAILED' || attempts > 20) {
                 clearInterval(this.pollingInterval);
-                // 🟢 Auto-close the popup when the backend verifies the outcome
+                // Auto-close the popup when the backend verifies the outcome
                 if (popupWindow && !popupWindow.closed) {
                     popupWindow.close();
                 }
@@ -488,7 +631,7 @@ class SolydFlowClient {
             const bgColor = config.background_color || "#000000";
             const primaryColor = config.primary_color || "#EA580C";
             const textColor = bgColor.toLowerCase() === "#ffffff" ? "#000000" : "#ffffff";
-            // 🟢 THE VIRAL WATERMARK & UI
+            // THE VIRAL WATERMARK & UI
             let html = `
         <div style="background-color: ${bgColor}; color: ${textColor}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.15); max-width: 420px; margin: 0 auto; border: 1px solid rgba(128,128,128,0.15); position: relative;">
           
@@ -549,6 +692,414 @@ class SolydFlowClient {
         }
         catch (error) {
             container.innerHTML = `<div style="color: #EA580C; text-align: center; font-family: sans-serif; padding: 20px; background: #fff0e6; border-radius: 8px;">Error loading paywall. Please check your API keys.</div>`;
+        }
+    }
+    async renderWebPaywall(containerId) {
+        this.requireConfig();
+        const container = document.getElementById(containerId);
+        if (!container)
+            throw new Error(`Container #${containerId} not found.`);
+        // 1. Show loading state
+        container.innerHTML = `
+      <div style="display:flex; justify-content:center; padding: 40px;">
+        <div style="width:30px; height:30px; border:3px solid #333; border-top-color:#EA580C; border-radius:50%; animation:sf-spin 1s linear infinite;"></div>
+      </div>
+      <style>@keyframes sf-spin { to { transform: rotate(360deg); } }</style>
+    `;
+        try {
+            // 2. Fetch Data in Parallel
+            const [offerings, paywallRes] = await Promise.all([
+                this.getOfferings(true),
+                fetch(`${this.baseUrl}/paywall`, { headers: { "X-API-Key": this.apiKey } }).then(r => r.json())
+            ]);
+            const config = paywallRes.config || {};
+            const tiersMeta = paywallRes.tiers || [];
+            // 3. Logic: Extract Durations & Sort
+            const durationOrder = { "week": 1, "month": 2, "quarter": 3, "year": 4, "lifetime": 5 };
+            const availableDurations = [...new Set(offerings.map(p => p.duration))].sort((a, b) => durationOrder[a] - durationOrder[b]);
+            let activeDuration = availableDurations.includes("month") ? "month" : availableDurations[0];
+            // 4. Inject CSS
+            const primaryColor = config.primary_color || "#EA580C";
+            const bgColor = config.background_color || "#000000";
+            const isDark = bgColor === "#000000" || bgColor === "#111111" || bgColor === "#050505";
+            const textColor = isDark ? "#ffffff" : "#000000";
+            const cardBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)";
+            const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+            const style = document.createElement('style');
+            style.innerHTML = `
+        .sf-wrapper { font-family: system-ui, -apple-system, sans-serif; color: ${textColor}; width: 100%; max-width: 900px; margin: 0 auto; }
+        .sf-header { text-align: center; margin-bottom: 30px; }
+        .sf-headline { font-size: 2.5rem; font-weight: 800; margin: 0 0 10px 0; line-height: 1.2; }
+        .sf-subhead { font-size: 1.1rem; opacity: 0.7; margin: 0; }
+        .sf-hero-img { width: 100%; height: 200px; object-fit: cover; border-radius: 16px; margin-bottom: 30px; border: 1px solid ${borderColor}; }
+        
+        /* Toggle */
+        .sf-toggle-wrapper { display: flex; justify-content: center; margin-bottom: 40px; }
+        .sf-toggle { display: flex; background: ${cardBg}; padding: 4px; border-radius: 99px; border: 1px solid ${borderColor}; }
+        .sf-toggle-btn { background: transparent; border: none; color: ${textColor}; padding: 8px 20px; border-radius: 99px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; opacity: 0.6; text-transform: capitalize; }
+        .sf-toggle-btn.active { background: ${textColor}; color: ${bgColor}; opacity: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        /* Grid */
+        .sf-grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: stretch; }
+        .sf-card { background: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 24px; padding: 32px; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s; position: relative; overflow: hidden; }
+        .sf-card:hover { transform: translateY(-4px); }
+        .sf-card.popular { border-color: ${primaryColor}; box-shadow: 0 8px 30px ${primaryColor}20; }
+        
+        .sf-badge { position: absolute; top: 0; right: 0; background: ${primaryColor}; color: #fff; font-size: 10px; font-weight: bold; padding: 6px 16px; border-bottom-left-radius: 16px; text-transform: uppercase; letter-spacing: 1px; }
+        .sf-tier-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 16px; }
+        .sf-price-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 24px; }
+        .sf-price { font-size: 2.5rem; font-weight: 900; }
+        .sf-duration { font-size: 0.9rem; opacity: 0.6; }
+        
+        .sf-features { list-style: none; padding: 0; margin: 0 0 32px 0; flex: 1; }
+        .sf-feature-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 0.95rem; opacity: 0.9; }
+        .sf-check { color: ${primaryColor}; font-weight: bold; }
+        
+        .sf-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 1rem; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+        .sf-btn-primary { background: ${primaryColor}; color: #fff; }
+        .sf-btn-secondary { background: ${textColor}; color: ${bgColor}; }
+        .sf-btn:hover { opacity: 0.9; }
+        .sf-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Email Input for Web Guests */
+        .sf-email-input { width: 100%; padding: 12px 16px; margin-bottom: 16px; border-radius: 8px; border: 1px solid ${borderColor}; background: ${bgColor}; color: ${textColor}; font-size: 14px; outline: none; }
+        .sf-email-input:focus { border-color: ${primaryColor}; }
+        
+        .sf-footer { text-align: center; margin-top: 32px; font-size: 0.75rem; opacity: 0.5; }
+      `;
+            document.head.appendChild(style);
+            // 5. Render Function
+            const renderUI = () => {
+                // Filter and Sort: Lowest tier level first, then by price
+                const visiblePackages = offerings
+                    .filter(p => p.duration === activeDuration)
+                    .sort((a, b) => {
+                    if (a.tier_level !== b.tier_level)
+                        return a.tier_level - b.tier_level;
+                    return a.amount_kobo - b.amount_kobo;
+                });
+                let html = `<div class="sf-wrapper">`;
+                // Hero Image
+                if (config.header_image_url) {
+                    html += `<img src="${config.header_image_url}" class="sf-hero-img" alt="Header" />`;
+                }
+                // Header
+                html += `
+          <div class="sf-header">
+            <h1 class="sf-headline">${config.headline || "Upgrade to Pro"}</h1>
+            <p class="sf-subhead">${config.subheading || "Choose the plan that fits you best."}</p>
+          </div>
+        `;
+                // Email Input (Crucial for Web so they get their receipt!)
+                // Only show if the user ID is a generated guest ID
+                const isGuest = this.userId?.startsWith("guest_");
+                if (isGuest) {
+                    html += `
+            <div style="max-width: 400px; margin: 0 auto 30px auto; text-align: left;">
+              <label style="font-size: 12px; font-weight: bold; opacity: 0.7; margin-bottom: 6px; display: block;">Enter your email to receive access</label>
+              <input type="email" id="sf-guest-email" class="sf-email-input" placeholder="you@example.com" />
+            </div>
+          `;
+                }
+                // Duration Toggle
+                if (availableDurations.length > 1) {
+                    html += `<div class="sf-toggle-wrapper"><div class="sf-toggle">`;
+                    availableDurations.forEach(dur => {
+                        const label = dur === "lifetime" ? "One-Time" : (dur === "quarter" ? "Quarterly" : dur + "ly");
+                        html += `<button class="sf-toggle-btn ${activeDuration === dur ? 'active' : ''}" data-dur="${dur}">${label}</button>`;
+                    });
+                    html += `</div></div>`;
+                }
+                // Grid
+                html += `<div class="sf-grid">`;
+                if (visiblePackages.length === 0) {
+                    html += `<div style="text-align:center; padding: 40px; width: 100%; opacity: 0.5;">No plans available.</div>`;
+                }
+                visiblePackages.forEach((pkg, index) => {
+                    const isHighestTier = pkg.tier_level > 1 || (index === visiblePackages.length - 1 && visiblePackages.length > 1);
+                    const meta = tiersMeta.find((t) => t.entitlement_id === pkg.entitlement_id);
+                    const displayName = meta?.display_name || pkg.name;
+                    const features = meta?.features || [];
+                    html += `
+            <div class="sf-card ${isHighestTier ? 'popular' : ''}">
+              ${isHighestTier ? `<div class="sf-badge">Best Value</div>` : ''}
+              
+              <div class="sf-tier-name">${displayName}</div>
+              
+              <div class="sf-price-row">
+                <span class="sf-price">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</span>
+                <span class="sf-duration">/${pkg.duration === 'lifetime' ? 'forever' : pkg.duration}</span>
+              </div>
+
+              <ul class="sf-features">
+                ${features.map((f) => `
+                  <li class="sf-feature-item">
+                    <span class="sf-check">✓</span> <span>${f}</span>
+                  </li>
+                `).join('')}
+              </ul>
+
+              <button class="sf-btn ${isHighestTier ? 'sf-btn-primary' : 'sf-btn-secondary'} sf-buy-btn" data-pkg="${pkg.identifier}">
+                Get ${displayName}
+              </button>
+            </div>
+          `;
+                });
+                html += `</div>`;
+                if (config.footer_text) {
+                    html += `<div class="sf-footer">${config.footer_text}</div>`;
+                }
+                html += `</div>`;
+                container.innerHTML = html;
+                // Attach Listeners
+                document.querySelectorAll('.sf-toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        activeDuration = e.target.getAttribute('data-dur') || activeDuration;
+                        renderUI(); // Re-render on toggle
+                    });
+                });
+                document.querySelectorAll('.sf-buy-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const target = e.target;
+                        const pkgId = target.getAttribute('data-pkg');
+                        let userEmail = "";
+                        if (isGuest) {
+                            const emailInput = document.getElementById('sf-guest-email');
+                            if (!emailInput.value || !emailInput.value.includes("@")) {
+                                // ALERT WITH SOLYD DIALOG
+                                SolydDialog.showError("Missing Information", "Please enter a valid email address so we can send your receipt and access link.", () => {
+                                    emailInput.focus();
+                                });
+                                return;
+                            }
+                            userEmail = emailInput.value;
+                        }
+                        target.innerHTML = "Processing...";
+                        target.disabled = true;
+                        // BLOCK SCREEN WITH SOLYD LOADING DIALOG
+                        SolydDialog.show("Initializing secure checkout environment...", null);
+                        try {
+                            // Trigger actual purchase
+                            await this.purchasePackage(pkgId, undefined, 0, userEmail);
+                        }
+                        catch (err) {
+                            // ALERT WITH SOLYD DIALOG
+                            SolydDialog.showError("Checkout Error", err.message || "Failed to initialize checkout. Please try again.", () => {
+                                target.innerHTML = "Try again...";
+                                target.disabled = false;
+                                target.style.opacity = "1";
+                            });
+                        }
+                    });
+                });
+            };
+            // Initial Render
+            renderUI();
+            // Track view
+            this.trackEvent("hosted_paywall_viewed");
+        }
+        catch (e) {
+            container.innerHTML = `<div style="text-align:center; color:red; padding:40px;">Failed to load paywall.</div>`;
+        }
+    }
+    /**
+     * Mounts the No-Code Paywall directly into the Developer's webpage
+     * @param containerId The ID of the div where the paywall should be injected
+     */
+    async renderWebPaywallNew(containerId) {
+        this.requireConfig();
+        const container = document.getElementById(containerId);
+        if (!container)
+            throw new Error(`Container with ID '${containerId}' not found.`);
+        // 1. Initial Loading State
+        container.innerHTML = `
+      <div style="text-align:center; padding: 40px; font-family: sans-serif; color: #888;">
+        <svg style="width:24px;height:24px;margin:auto;animation:sf-spin 1s linear infinite;" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="31.4 31.4"></circle>
+        </svg>
+        <div style="margin-top: 10px; font-size: 12px;">Loading Secure Paywall...</div>
+      </div>
+      <style>@keyframes sf-spin { to { transform: rotate(360deg); } }</style>
+    `;
+        try {
+            // 2. Fetch Data
+            const [offerings, paywallData] = await Promise.all([
+                this.getOfferings(true), // silent=true
+                fetch(`${this.baseUrl}/paywall`, { headers: { "X-API-Key": this.apiKey } }).then(r => r.json())
+            ]);
+            const config = paywallData.config || {};
+            const tiers = paywallData.tiers || [];
+            const bgColor = config.background_color || "#000000";
+            const primaryColor = config.primary_color || "#EA580C";
+            // Smart contrast calculation
+            const isDark = bgColor.toLowerCase() === "#000000" || bgColor.toLowerCase() === "#111111" || bgColor.toLowerCase() === "#050505";
+            const textColor = isDark ? "#ffffff" : "#000000";
+            const cardBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
+            const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+            // 3. Extract Durations for the Toggle
+            const durationOrder = { "week": 1, "month": 2, "quarter": 3, "year": 4, "lifetime": 5 };
+            const availableDurations = [...new Set(offerings.map((p) => p.duration))]
+                .sort((a, b) => durationOrder[a] - durationOrder[b]);
+            let activeDuration = availableDurations.includes("month") ? "month" : availableDurations[0];
+            // Expose to window for inline onclick fallback if needed
+            window.SolydFlow = this;
+            // 4. The Render Loop (Allows switching tabs without reloading page)
+            const renderUI = () => {
+                // Filter and Sort: Lowest tier first
+                const visiblePackages = offerings
+                    .filter((p) => p.duration === activeDuration)
+                    .sort((a, b) => (a.tier_level || 1) - (b.tier_level || 1));
+                let html = `
+          <div style="background-color: ${bgColor}; color: ${textColor}; font-family: system-ui, -apple-system, sans-serif; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.2); max-width: 900px; margin: 0 auto; border: 1px solid ${borderColor}; position: relative;">
+            
+            <!-- WATERMARK -->
+            <div style="position: absolute; top: 16px; right: 20px; display: flex; align-items: center; gap: 6px; z-index: 10; background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 20px; backdrop-filter: blur(8px);">
+              <img src="https://solydflow.com/logo.png" style="width: 14px; height: 14px; object-fit: contain;" alt="SolydFlow"/>
+              <span style="font-size: 10px; font-weight: 700; color: #fff; letter-spacing: 0.5px; text-transform: uppercase;">Secured by SolydFlow</span>
+            </div>
+
+            ${config.header_image_url ? `<img src="${config.header_image_url}" style="width: 100%; height: 220px; object-fit: cover;" />` : '<div style="height: 60px;"></div>'}
+            
+            <div style="padding: 32px 40px;">
+              <div style="text-align: center; margin-bottom: 32px;">
+                <h2 style="margin: 0 0 8px 0; font-size: 32px; font-weight: 900; letter-spacing: -0.5px;">${config.headline}</h2>
+                <p style="margin: 0; font-size: 15px; opacity: 0.6; line-height: 1.5; max-width: 500px; margin: 0 auto;">${config.subheading}</p>
+              </div>
+        `;
+                // GUEST EMAIL INPUT (If user is anonymous)
+                const isGuest = this.userId?.startsWith("guest_");
+                if (isGuest) {
+                    html += `
+            <div style="max-width: 400px; margin: 0 auto 30px auto; text-align: center;">
+              <label style="font-size: 12px; font-weight: bold; opacity: 0.7; margin-bottom: 8px; display: block;">Enter email to receive your access link</label>
+              <input type="email" id="sf-guest-email" placeholder="you@example.com" style="width: 100%; padding: 14px 20px; border-radius: 12px; border: 1px solid ${borderColor}; background: ${cardBg}; color: ${textColor}; font-size: 15px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primaryColor}'" onblur="this.style.borderColor='${borderColor}'" />
+            </div>
+          `;
+                }
+                // DURATION TOGGLE
+                if (availableDurations.length > 1) {
+                    html += `
+            <div style="display: flex; justify-content: center; margin-bottom: 40px;">
+              <div style="display: flex; background: ${cardBg}; padding: 6px; border-radius: 99px; border: 1px solid ${borderColor};">
+          `;
+                    availableDurations.forEach(dur => {
+                        const label = dur === "lifetime" ? "One-Time" : (dur === "quarter" ? "Quarterly" : dur + "ly");
+                        const isActive = activeDuration === dur;
+                        html += `
+                <button class="sf-toggle-btn" data-dur="${dur}" style="background: ${isActive ? textColor : 'transparent'}; color: ${isActive ? bgColor : textColor}; border: none; padding: 10px 24px; border-radius: 99px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s ease; opacity: ${isActive ? '1' : '0.6'}; box-shadow: ${isActive ? '0 4px 12px rgba(0,0,0,0.1)' : 'none'};">
+                  ${label}
+                </button>
+            `;
+                    });
+                    html += `</div></div>`;
+                }
+                // RESPONSIVE GRID (Side-by-side on Desktop, Stacked on Mobile)
+                html += `<div style="display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">`;
+                if (visiblePackages.length === 0) {
+                    html += `<div style="text-align:center; padding: 40px; opacity: 0.5; grid-column: 1 / -1;">No plans available for this cycle.</div>`;
+                }
+                visiblePackages.forEach((pkg, index) => {
+                    const isHighestTier = pkg.tier_level > 1 || (index === visiblePackages.length - 1 && visiblePackages.length > 1);
+                    const tierMeta = tiers.find((t) => t.entitlement_id === pkg.entitlement_id);
+                    const displayName = tierMeta ? tierMeta.display_name : pkg.name;
+                    const features = tierMeta?.features || [];
+                    let priceHtml = '';
+                    if (pkg.is_upgrade) {
+                        priceHtml = `
+                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</span>
+                <div style="color: ${primaryColor}; font-size: 36px; font-weight: 900; line-height: 1; margin-top: 4px;">${pkg.currency} ${(pkg.calculated_amount_kobo / 100).toLocaleString()}</div>
+                <div style="color: ${primaryColor}; font-size: 10px; font-weight: 900; margin-top: 8px; padding: 4px 8px; background: ${primaryColor}22; border-radius: 6px; display: inline-block;">UPGRADE CREDIT APPLIED</div>
+              `;
+                    }
+                    else {
+                        priceHtml = `<div style="font-size: 36px; font-weight: 900; line-height: 1;">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</div>`;
+                    }
+                    html += `
+            <div style="background: ${cardBg}; border: 1px solid ${isHighestTier ? primaryColor : borderColor}; border-radius: 24px; padding: 32px; display: flex; flex-direction: column; position: relative; transition: transform 0.2s; box-shadow: ${isHighestTier ? `0 8px 30px ${primaryColor}20` : 'none'};">
+              ${isHighestTier ? `<div style="position: absolute; top: 0; right: 0; background: ${primaryColor}; color: #fff; font-size: 10px; font-weight: 800; padding: 6px 16px; border-bottom-left-radius: 16px; text-transform: uppercase;">Best Value</div>` : ''}
+              
+              <div style="font-size: 20px; font-weight: 800; margin-bottom: 16px;">${displayName}</div>
+              
+              <div style="margin-bottom: 24px;">
+                ${priceHtml}
+                <div style="font-size: 12px; opacity: 0.5; margin-top: 6px; font-weight: 600; text-transform: uppercase;">PER ${pkg.duration}</div>
+              </div>
+
+              <ul style="list-style: none; padding: 0; margin: 0 0 32px 0; flex: 1;">
+                ${features.map((f) => `
+                  <li style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 14px; opacity: 0.9;">
+                    <span style="color: ${primaryColor}; font-weight: bold;">✓</span> <span>${f}</span>
+                  </li>
+                `).join('')}
+              </ul>
+
+              <button class="sf-buy-btn" data-pkg="${pkg.identifier}" style="width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; transition: opacity 0.2s; background: ${isHighestTier ? primaryColor : textColor}; color: ${isHighestTier ? '#fff' : bgColor};">
+                Get ${displayName}
+              </button>
+            </div>
+          `;
+                });
+                html += `
+              </div>
+              <p style="text-align: center; font-size: 12px; opacity: 0.4; margin-top: 32px; font-weight: 500;">${config.footer_text}</p>
+            </div>
+          </div>
+        `;
+                container.innerHTML = html;
+                // --- ATTACH EVENT LISTENERS ---
+                // 1. Duration Toggle listeners
+                document.querySelectorAll('.sf-toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        activeDuration = e.target.getAttribute('data-dur') || activeDuration;
+                        renderUI(); // Re-render the HTML with new duration
+                    });
+                });
+                // 2. Buy Button listeners
+                document.querySelectorAll('.sf-buy-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const target = e.currentTarget;
+                        const pkgId = target.getAttribute('data-pkg');
+                        // Handle Guest Email validation
+                        let userEmail = "";
+                        if (isGuest) {
+                            const emailInput = document.getElementById('sf-guest-email');
+                            if (!emailInput.value || !emailInput.value.includes("@")) {
+                                // ALERT WITH SOLYD DIALOG
+                                SolydDialog.showError("Missing Information", "Please enter a valid email address so we can send your receipt and access link.", () => {
+                                    emailInput.focus();
+                                });
+                                emailInput.focus();
+                                return;
+                            }
+                            userEmail = emailInput.value;
+                        }
+                        const originalText = target.innerHTML;
+                        target.innerHTML = "Processing...";
+                        target.disabled = true;
+                        target.style.opacity = "0.7";
+                        // BLOCK SCREEN WITH SOLYD LOADING DIALOG
+                        SolydDialog.show("Initializing secure checkout environment...", null);
+                        try {
+                            // Call the updated purchasePackage method
+                            await this.purchasePackage(pkgId, undefined, 0, userEmail);
+                        }
+                        catch (err) {
+                            // ALERT WITH SOLYD DIALOG
+                            SolydDialog.showError("Checkout Error", err.message || "Failed to initialize checkout. Please try again.", () => {
+                                target.innerHTML = originalText;
+                                target.disabled = false;
+                                target.style.opacity = "1";
+                            });
+                        }
+                    });
+                });
+            };
+            // Initial Render
+            renderUI();
+            this.trackEvent("hosted_paywall_viewed");
+        }
+        catch (error) {
+            container.innerHTML = `<div style="color: #EA580C; text-align: center; font-family: sans-serif; padding: 20px; background: #fff0e6; border-radius: 8px;">Error loading paywall. Please check your API keys or network connection.</div>`;
         }
     }
     requireConfig() {

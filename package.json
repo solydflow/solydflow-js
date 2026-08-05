@@ -1,6 +1,6 @@
 {
   "name": "solydflow-js",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Official SolydFlow JavaScript SDK",
   "main": "dist/index.js",
   "module": "./dist/index.mjs",
@@ -13,7 +13,9 @@
     "payments",
     "africa",
     "subscriptions",
-    "revenue"
+    "revenue",
+    "recover",
+    "subscriptions"
   ],
   "author": "SolydFlow",
   "license": "MIT",
