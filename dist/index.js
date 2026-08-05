@@ -816,30 +816,54 @@ class SolydFlowClient {
                     html += `<div style="text-align:center; padding: 40px; width: 100%; opacity: 0.5;">No plans available.</div>`;
                 }
                 visiblePackages.forEach((pkg, index) => {
-                    const isHighestTier = pkg.tier_level > 1 || (index === visiblePackages.length - 1 && visiblePackages.length > 1);
+                    // 1. DYNAMIC TIER LOGIC
+                    const isHighest = index === visiblePackages.length - 1 && visiblePackages.length > 1;
+                    const isMiddle = index === visiblePackages.length - 2 && visiblePackages.length > 2;
+                    const isHighlighted = isHighest || isMiddle; // Apply border/button highlights to both top tiers
                     const meta = tiersMeta.find((t) => t.entitlement_id === pkg.entitlement_id);
                     const displayName = meta?.display_name || pkg.name;
                     const features = meta?.features || [];
+                    // 2. DYNAMIC BADGE HTML
+                    let badgeHtml = '';
+                    if (isHighest) {
+                        // Premium Badge (Inverted Colors for Exclusivity)
+                        badgeHtml = `<div class="sf-badge" style="background: ${textColor}; color: ${bgColor};">Premium</div>`;
+                    }
+                    else if (isMiddle) {
+                        // Best Value Badge (Primary Theme Color)
+                        badgeHtml = `<div class="sf-badge">Best Value</div>`;
+                    }
+                    let priceHtml = '';
+                    if (pkg.is_upgrade) {
+                        priceHtml = `
+                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</span>
+                <div style="color: ${primaryColor}; font-size: 36px; font-weight: 900; line-height: 1; margin-top: 4px;">${pkg.currency} ${(pkg.calculated_amount_kobo / 100).toLocaleString()}</div>
+                <div style="color: ${primaryColor}; font-size: 10px; font-weight: 900; margin-top: 8px; padding: 4px 8px; background: ${primaryColor}22; border-radius: 6px; display: inline-block;">UPGRADE CREDIT APPLIED</div>
+              `;
+                    }
+                    else {
+                        priceHtml = `<div style="font-size: 36px; font-weight: 900; line-height: 1;">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</div>`;
+                    }
                     html += `
-            <div class="sf-card ${isHighestTier ? 'popular' : ''}">
-              ${isHighestTier ? `<div class="sf-badge">Best Value</div>` : ''}
+            <div class="sf-card ${isHighlighted ? 'popular' : ''}">
+              ${badgeHtml}
               
               <div class="sf-tier-name">${displayName}</div>
               
-              <div class="sf-price-row">
-                <span class="sf-price">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</span>
-                <span class="sf-duration">/${pkg.duration === 'lifetime' ? 'forever' : pkg.duration}</span>
+              <div style="margin-bottom: 24px;">
+                ${priceHtml}
+                <div style="font-size: 12px; opacity: 0.5; margin-top: 6px; font-weight: 600; text-transform: uppercase;">PER ${pkg.duration}</div>
               </div>
 
-              <ul class="sf-features">
+              <ul style="list-style: none; padding: 0; margin: 0 0 32px 0; flex: 1;">
                 ${features.map((f) => `
-                  <li class="sf-feature-item">
-                    <span class="sf-check">✓</span> <span>${f}</span>
+                  <li style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 14px; opacity: 0.9;">
+                    <span style="color: ${primaryColor}; font-weight: bold;">✓</span> <span>${f}</span>
                   </li>
                 `).join('')}
               </ul>
 
-              <button class="sf-btn ${isHighestTier ? 'sf-btn-primary' : 'sf-btn-secondary'} sf-buy-btn" data-pkg="${pkg.identifier}">
+              <button class="sf-buy-btn" data-pkg="${pkg.identifier}" style="width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; transition: opacity 0.2s; background: ${isHighlighted ? primaryColor : textColor}; color: ${isHighlighted ? '#fff' : bgColor};">
                 Get ${displayName}
               </button>
             </div>
@@ -999,10 +1023,23 @@ class SolydFlowClient {
                     html += `<div style="text-align:center; padding: 40px; opacity: 0.5; grid-column: 1 / -1;">No plans available for this cycle.</div>`;
                 }
                 visiblePackages.forEach((pkg, index) => {
-                    const isHighestTier = pkg.tier_level > 1 || (index === visiblePackages.length - 1 && visiblePackages.length > 1);
-                    const tierMeta = tiers.find((t) => t.entitlement_id === pkg.entitlement_id);
-                    const displayName = tierMeta ? tierMeta.display_name : pkg.name;
-                    const features = tierMeta?.features || [];
+                    // 1. DYNAMIC TIER LOGIC
+                    const isHighest = index === visiblePackages.length - 1 && visiblePackages.length > 1;
+                    const isMiddle = index === visiblePackages.length - 2 && visiblePackages.length > 2;
+                    const isHighlighted = isHighest || isMiddle; // Apply border/button highlights to both top tiers
+                    const meta = tiers.find((t) => t.entitlement_id === pkg.entitlement_id);
+                    const displayName = meta?.display_name || pkg.name;
+                    const features = meta?.features || [];
+                    // 2. DYNAMIC BADGE HTML
+                    let badgeHtml = '';
+                    if (isHighest) {
+                        // Premium Badge (Inverted Colors for Exclusivity)
+                        badgeHtml = `<div class="sf-badge" style="background: ${textColor}; color: ${bgColor};">Premium</div>`;
+                    }
+                    else if (isMiddle) {
+                        // Best Value Badge (Primary Theme Color)
+                        badgeHtml = `<div class="sf-badge">Best Value</div>`;
+                    }
                     let priceHtml = '';
                     if (pkg.is_upgrade) {
                         priceHtml = `
@@ -1015,10 +1052,10 @@ class SolydFlowClient {
                         priceHtml = `<div style="font-size: 36px; font-weight: 900; line-height: 1;">${pkg.currency} ${(pkg.amount_kobo / 100).toLocaleString()}</div>`;
                     }
                     html += `
-            <div style="background: ${cardBg}; border: 1px solid ${isHighestTier ? primaryColor : borderColor}; border-radius: 24px; padding: 32px; display: flex; flex-direction: column; position: relative; transition: transform 0.2s; box-shadow: ${isHighestTier ? `0 8px 30px ${primaryColor}20` : 'none'};">
-              ${isHighestTier ? `<div style="position: absolute; top: 0; right: 0; background: ${primaryColor}; color: #fff; font-size: 10px; font-weight: 800; padding: 6px 16px; border-bottom-left-radius: 16px; text-transform: uppercase;">Best Value</div>` : ''}
+            <div class="sf-card ${isHighlighted ? 'popular' : ''}">
+              ${badgeHtml}
               
-              <div style="font-size: 20px; font-weight: 800; margin-bottom: 16px;">${displayName}</div>
+              <div class="sf-tier-name">${displayName}</div>
               
               <div style="margin-bottom: 24px;">
                 ${priceHtml}
@@ -1033,7 +1070,7 @@ class SolydFlowClient {
                 `).join('')}
               </ul>
 
-              <button class="sf-buy-btn" data-pkg="${pkg.identifier}" style="width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; transition: opacity 0.2s; background: ${isHighestTier ? primaryColor : textColor}; color: ${isHighestTier ? '#fff' : bgColor};">
+              <button class="sf-buy-btn" data-pkg="${pkg.identifier}" style="width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; transition: opacity 0.2s; background: ${isHighlighted ? primaryColor : textColor}; color: ${isHighlighted ? '#fff' : bgColor};">
                 Get ${displayName}
               </button>
             </div>
