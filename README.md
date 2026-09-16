@@ -170,11 +170,11 @@ async function fetchRawPackages() {
   offerings.forEach(pkg => {
     if (pkg.is_upgrade) {
       console.log(
-        `Upgrade for ${pkg.currency} ${pkg.calculated_amount_kobo / 100}`
+        `Upgrade for ${pkg.currency} ${pkg.calculated_amount_minor}`
       );
     } else {
       console.log(
-        `Standard Price: ${pkg.currency} ${pkg.amount_kobo / 100}`
+        `Standard Price: ${pkg.currency} ${pkg.amount_minor}`
       );
     }
   });

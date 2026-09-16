@@ -17,8 +17,8 @@ export interface SolydPackage {
   identifier: string;
   entitlement_id: string;
   name: string;
-  amount_kobo: number;
-  calculated_amount_kobo: number;
+  amount_minor: number;
+  calculated_amount_minor: number;
   is_upgrade: boolean;
   currency: string;
   duration: string;
@@ -463,7 +463,7 @@ class SolydFlowClient {
   public async purchasePackage(
     packageIdentifier: string, 
     userPhone?: string, 
-    customAmountKobo?: number, 
+    customAmountMinor?: number, 
     userEmail?: string,
   ): Promise<void> {
     this.requireConfig();
@@ -500,7 +500,7 @@ class SolydFlowClient {
       package_identifier: packageIdentifier,
       email: userEmail || this.userEmail || "",
       phone: userPhone || "",
-      custom_amount_kobo: customAmountKobo || 0,
+      custom_amount_minor: customAmountMinor || 0,
       telemetry: telemetryData
     };
 
@@ -612,7 +612,7 @@ class SolydFlowClient {
           );
         } 
         else {
-          // Attempts > 20 (Timeout / Zombie state)
+          // Attempts > 20 (Timeout / Orphaned state)
           // The user didn't pay in time, but the Sweeper might catch it later
           SolydDialog.showError(
             "Session Timed Out", 
@@ -745,17 +745,19 @@ class SolydFlowClient {
       `;
 
       offerings.forEach((pkg: any) => {
-        const tierMeta = tiers.find((t: any) => t.entitlement_id === pkg.entitlement_id);
+        const tierMeta = tiers.find(
+          (t: any) => t.entitlement_id === pkg.entitlement_id
+        );
         const displayName = tierMeta ? tierMeta.display_name : pkg.name;
         
         let priceHtml = '';
         if (pkg.is_upgrade) {
             priceHtml = `
-              <span style="text-decoration: line-through; opacity: 0.4; font-size: 11px;">${pkg.currency} ${(pkg.amount_kobo/100).toLocaleString()}</span>
-              <strong style="color: ${primaryColor}; font-size: 22px; display: block; line-height: 1;">${pkg.currency} ${(pkg.calculated_amount_kobo/100).toLocaleString()}</strong>
+              <span style="text-decoration: line-through; opacity: 0.4; font-size: 11px;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</span>
+              <strong style="color: ${primaryColor}; font-size: 22px; display: block; line-height: 1;">${pkg.currency} ${(pkg.calculated_amount_minor).toLocaleString()}</strong>
             `;
         } else {
-            priceHtml = `<strong style="font-size: 22px;">${pkg.currency} ${(pkg.amount_kobo/100).toLocaleString()}</strong>`;
+            priceHtml = `<strong style="font-size: 22px;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</strong>`;
         }
 
         html += `
@@ -946,19 +948,19 @@ class SolydFlowClient {
           if (pkg.is_variable_price) {
               priceHtml = `
                 <div style="display: flex; align-items: baseline;">
-                  <span class="sf-price">${pkg.currency}</span>
-                  <input type="number" id="sf-var-${pkg.identifier}" class="sf-var-input" value="${pkg.amount_kobo/100}" min="${pkg.amount_kobo/100}" step="any" />
+                  <span class="sf-price" data-cur="${pkg.currency}">${pkg.currency}</span>
+                  <input type="number" id="sf-var-${pkg.identifier}" class="sf-var-input" value="${pkg.amount_minor}" min="${pkg.amount_minor}" step="any" />
                 </div>
-                <div style="font-size: 10px; color: ${primaryColor}; font-weight: bold; margin-top: 8px;">PAY WHAT YOU WANT (Min: ${pkg.currency} ${pkg.amount_kobo/100})</div>
+                <div style="font-size: 10px; color: ${primaryColor}; font-weight: bold; margin-top: 8px;">PAY WHAT YOU WANT (Min: ${pkg.currency} ${pkg.amount_minor})</div>
               `;
           } else if (pkg.is_upgrade) {
               priceHtml = `
-                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_kobo/100).toLocaleString()}</span>
-                <div style="color: ${primaryColor};" class="sf-price">${pkg.currency} ${(pkg.calculated_amount_kobo/100).toLocaleString()}</div>
+                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</span>
+                <div style="color: ${primaryColor};" class="sf-price">${pkg.currency} ${(pkg.calculated_amount_minor).toLocaleString()}</div>
                 <div style="color: ${primaryColor}; font-size: 10px; font-weight: 900; margin-top: 8px; padding: 4px 8px; background: ${primaryColor}22; border-radius: 6px; display: inline-block;">UPGRADE CREDIT APPLIED</div>
               `;
           } else {
-              priceHtml = `<div class="sf-price">${pkg.currency} ${(pkg.amount_kobo/100).toLocaleString()}</div>`;
+              priceHtml = `<div class="sf-price">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</div>`;
           }
 
           // BUTTON TEXT LOGIC
@@ -984,7 +986,7 @@ class SolydFlowClient {
               </ul>
 
               <!-- Attached data-isvar and data-min -->
-              <button class="sf-btn ${isHighlighted ? 'sf-btn-primary' : 'sf-btn-secondary'} sf-buy-btn" data-pkg="${pkg.identifier}" data-isvar="${pkg.is_variable_price}" data-min="${pkg.amount_kobo}">
+              <button class="sf-btn ${isHighlighted ? 'sf-btn-primary' : 'sf-btn-secondary'} sf-buy-btn" data-pkg="${pkg.identifier}" data-isvar="${pkg.is_variable_price}" data-min="${pkg.amount_minor}">
                 ${buttonText}
               </button>
             </div>
@@ -1008,21 +1010,22 @@ class SolydFlowClient {
           btn.addEventListener('click', async (e) => {
             const target = e.currentTarget as HTMLButtonElement;
             const pkgId = target.getAttribute('data-pkg')!;
+            const currency = target.getAttribute('data-cur')!;
             
             // VALIDATE CUSTOM AMOUNT IF VARIABLE
             const isVar = target.getAttribute('data-isvar') === 'true';
-            let customKobo = 0;
+            let customMinor = 0;
             
             if (isVar) {
                 const inputEl = document.getElementById(`sf-var-${pkgId}`) as HTMLInputElement;
-                const minKobo = parseInt(target.getAttribute('data-min') || '0');
+                const minMinor = parseInt(target.getAttribute('data-min') || '0');
                 const userVal = parseFloat(inputEl.value);
                 
-                customKobo = Math.round(userVal * 100);
+                customMinor = formatPrice(currency, userVal);
 
-                if (isNaN(userVal) || customKobo < minKobo) {
+                if (isNaN(userVal) || customMinor < minMinor) {
                     // @ts-ignore (Assuming SolydDialog is available globally or imported)
-                    SolydDialog.showError("Invalid Amount", `Please enter an amount of at least ${minKobo/100}.`, () => {
+                    SolydDialog.showError("Invalid Amount", `Please enter an amount of at least ${minMinor/100}.`, () => {
                         inputEl.focus();
                     });
                     return;
@@ -1050,8 +1053,8 @@ class SolydFlowClient {
             SolydDialog.show("Initializing secure checkout environment...", null);
             
             try {
-              // PASS CUSTOM KOBO TO API
-              await this.purchasePackage(pkgId, undefined, customKobo, userEmail); 
+              // PASS CUSTOM Minor TO API
+              await this.purchasePackage(pkgId, undefined, customMinor, userEmail); 
             } catch (err: any) {
               // @ts-ignore
               SolydDialog.showError("Checkout Error", err.message || "Failed to initialize checkout. Please try again.", () => {
@@ -1206,12 +1209,12 @@ class SolydFlowClient {
           let priceHtml = '';
           if (pkg.is_upgrade) {
               priceHtml = `
-                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_kobo/100).toLocaleString()}</span>
-                <div style="color: ${primaryColor}; font-size: 36px; font-weight: 900; line-height: 1; margin-top: 4px;">${pkg.currency} ${(pkg.calculated_amount_kobo/100).toLocaleString()}</div>
+                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</span>
+                <div style="color: ${primaryColor}; font-size: 36px; font-weight: 900; line-height: 1; margin-top: 4px;">${pkg.currency} ${(pkg.calculated_amount_minor).toLocaleString()}</div>
                 <div style="color: ${primaryColor}; font-size: 10px; font-weight: 900; margin-top: 8px; padding: 4px 8px; background: ${primaryColor}22; border-radius: 6px; display: inline-block;">UPGRADE CREDIT APPLIED</div>
               `;
           } else {
-              priceHtml = `<div style="font-size: 36px; font-weight: 900; line-height: 1;">${pkg.currency} ${(pkg.amount_kobo/100).toLocaleString()}</div>`;
+              priceHtml = `<div style="font-size: 36px; font-weight: 900; line-height: 1;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</div>`;
           }
 
           html += `
@@ -1317,5 +1320,14 @@ class SolydFlowClient {
     if (!this.apiKey || !this.userId) throw new Error("Call SolydFlow.configure() first.");
   }
 }
+
+
+
+const formatPrice = (currency: string, amount: number) => {
+  const zeroDecimals = ["BIF", "CLP", "DJF", "GNF", "JPY", "KMF", "KRW", "MGA", "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"];
+  const exponent = zeroDecimals.includes(currency.toUpperCase()) ? 0 : 2;
+  return amount * Math.pow(10, exponent);
+}
+
 
 export const SolydFlow = new SolydFlowClient();

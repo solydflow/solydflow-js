@@ -9,8 +9,8 @@ export interface SolydPackage {
     identifier: string;
     entitlement_id: string;
     name: string;
-    amount_kobo: number;
-    calculated_amount_kobo: number;
+    amount_minor: number;
+    calculated_amount_minor: number;
     is_upgrade: boolean;
     currency: string;
     duration: string;
@@ -52,7 +52,7 @@ declare class SolydFlowClient {
     /**
      * Initialize checkout and redirect the browser
      */
-    purchasePackage(packageIdentifier: string, userPhone?: string, customAmountKobo?: number, userEmail?: string): Promise<void>;
+    purchasePackage(packageIdentifier: string, userPhone?: string, customAmountMinor?: number, userEmail?: string): Promise<void>;
     private pollVerification;
     /**
      * Verify a transaction after returning from a hosted checkout redirect.
