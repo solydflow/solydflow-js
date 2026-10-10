@@ -613,7 +613,7 @@ class SolydFlowClient {
      * Mounts the No-Code Paywall directly into the Developer's webpage
      * @param containerId The ID of the div where the paywall should be injected
      */
-    async renderPaywall(containerId) {
+    async renderPaywallOld(containerId) {
         const container = document.getElementById(containerId);
         if (!container)
             throw new Error(`Container with ID '${containerId}' not found.`);
@@ -655,12 +655,12 @@ class SolydFlowClient {
                 let priceHtml = '';
                 if (pkg.is_upgrade) {
                     priceHtml = `
-              <span style="text-decoration: line-through; opacity: 0.4; font-size: 11px;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</span>
+              <span style="text-decoration: line-through; opacity: 0.4; font-size: 11px;">${pkg.currency} ${(pkg.amount_minor / 100).toLocaleString()}</span>
               <strong style="color: ${primaryColor}; font-size: 22px; display: block; line-height: 1;">${pkg.currency} ${(pkg.calculated_amount_minor).toLocaleString()}</strong>
             `;
                 }
                 else {
-                    priceHtml = `<strong style="font-size: 22px;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</strong>`;
+                    priceHtml = `<strong style="font-size: 22px;">${pkg.currency} ${(pkg.amount_minor / 100).toLocaleString()}</strong>`;
                 }
                 html += `
           <div style="border: 1px solid rgba(128,128,128,0.15); border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.2s ease;" 
@@ -694,7 +694,38 @@ class SolydFlowClient {
             container.innerHTML = `<div style="color: #EA580C; text-align: center; font-family: sans-serif; padding: 20px; background: #fff0e6; border-radius: 8px;">Error loading paywall. Please check your API keys.</div>`;
         }
     }
-    async renderWebPaywall(containerId) {
+    renderWebPaywall(containerId) {
+        this.requireConfig();
+        const container = document.getElementById(containerId);
+        if (!container)
+            throw new Error(`Container #${containerId} not found.`);
+        // 1. Create the iframe pointing to your Next.js hosted embed
+        const iframe = document.createElement("iframe");
+        iframe.src = `https://console.solydflow.com/embed/paywall/${this.apiKey}`;
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.border = "none";
+        iframe.style.minHeight = "600px"; // Ensure it has space
+        container.innerHTML = "";
+        container.appendChild(iframe);
+        // 2. Listen for the user clicking "Buy" inside the iframe
+        window.addEventListener("message", async (event) => {
+            // Security: Ensure message came from SolydFlow
+            if (event.origin !== "https://console.solydflow.com")
+                return;
+            if (event.data && event.data.type === "SOLYDFLOW_PURCHASE") {
+                const { packageId, amountMinor } = event.data;
+                try {
+                    // 3. Trigger the actual purchase and redirect
+                    await this.purchasePackage(packageId, "", amountMinor);
+                }
+                catch (err) {
+                    alert("Checkout Error: " + err.message);
+                }
+            }
+        });
+    }
+    async renderWebPaywallOld(containerId) {
         this.requireConfig();
         const container = document.getElementById(containerId);
         if (!container)
@@ -831,20 +862,20 @@ class SolydFlowClient {
                         priceHtml = `
                 <div style="display: flex; align-items: baseline;">
                   <span class="sf-price" data-cur="${pkg.currency}">${pkg.currency}</span>
-                  <input type="number" id="sf-var-${pkg.identifier}" class="sf-var-input" value="${pkg.amount_minor}" min="${pkg.amount_minor}" step="any" />
+                  <input type="number" id="sf-var-${pkg.identifier}" class="sf-var-input" value="${pkg.amount_minor}" min="${pkg.amount_minor / 100}" step="any" />
                 </div>
-                <div style="font-size: 10px; color: ${primaryColor}; font-weight: bold; margin-top: 8px;">PAY WHAT YOU WANT (Min: ${pkg.currency} ${pkg.amount_minor})</div>
+                <div style="font-size: 10px; color: ${primaryColor}; font-weight: bold; margin-top: 8px;">PAY WHAT YOU WANT (Min: ${pkg.currency} ${pkg.amount_minor / 100})</div>
               `;
                     }
                     else if (pkg.is_upgrade) {
                         priceHtml = `
-                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</span>
+                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_minor / 100).toLocaleString()}</span>
                 <div style="color: ${primaryColor};" class="sf-price">${pkg.currency} ${(pkg.calculated_amount_minor).toLocaleString()}</div>
                 <div style="color: ${primaryColor}; font-size: 10px; font-weight: 900; margin-top: 8px; padding: 4px 8px; background: ${primaryColor}22; border-radius: 6px; display: inline-block;">UPGRADE CREDIT APPLIED</div>
               `;
                     }
                     else {
-                        priceHtml = `<div class="sf-price">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</div>`;
+                        priceHtml = `<div class="sf-price">${pkg.currency} ${(pkg.amount_minor / 100).toLocaleString()}</div>`;
                     }
                     // BUTTON TEXT LOGIC
                     const buttonText = pkg.is_variable_price ? `Support & Pay` : `Get ${displayName}`;
@@ -1065,13 +1096,13 @@ class SolydFlowClient {
                     let priceHtml = '';
                     if (pkg.is_upgrade) {
                         priceHtml = `
-                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</span>
+                <span style="text-decoration: line-through; opacity: 0.4; font-size: 14px;">${pkg.currency} ${(pkg.amount_minor / 100).toLocaleString()}</span>
                 <div style="color: ${primaryColor}; font-size: 36px; font-weight: 900; line-height: 1; margin-top: 4px;">${pkg.currency} ${(pkg.calculated_amount_minor).toLocaleString()}</div>
                 <div style="color: ${primaryColor}; font-size: 10px; font-weight: 900; margin-top: 8px; padding: 4px 8px; background: ${primaryColor}22; border-radius: 6px; display: inline-block;">UPGRADE CREDIT APPLIED</div>
               `;
                     }
                     else {
-                        priceHtml = `<div style="font-size: 36px; font-weight: 900; line-height: 1;">${pkg.currency} ${(pkg.amount_minor).toLocaleString()}</div>`;
+                        priceHtml = `<div style="font-size: 36px; font-weight: 900; line-height: 1;">${pkg.currency} ${(pkg.amount_minor / 100).toLocaleString()}</div>`;
                     }
                     html += `
             <div class="sf-card ${isHighlighted ? 'popular' : ''}">

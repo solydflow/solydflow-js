@@ -71,8 +71,9 @@ declare class SolydFlowClient {
      * Mounts the No-Code Paywall directly into the Developer's webpage
      * @param containerId The ID of the div where the paywall should be injected
      */
-    renderPaywall(containerId: string): Promise<void>;
-    renderWebPaywall(containerId: string): Promise<void>;
+    renderPaywallOld(containerId: string): Promise<void>;
+    renderWebPaywall(containerId: string): void;
+    renderWebPaywallOld(containerId: string): Promise<void>;
     /**
      * Mounts the No-Code Paywall directly into the Developer's webpage
      * @param containerId The ID of the div where the paywall should be injected
